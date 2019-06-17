@@ -12,3 +12,4 @@
 [2019-05-08 15:10:26] commit #10 — fix: correção de tipografia
 [2019-05-22 10:55:38] commit #11 — feat: modos de criação de commits
 [2019-06-03 14:28:17] commit #12 — refactor: reorganização de pastas
+[2019-06-17 08:14:45] commit #13 — feat: backend Flask para CLI
