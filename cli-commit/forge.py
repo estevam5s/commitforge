@@ -1294,6 +1294,148 @@ def servidor(porta, host, debug, abrir, sem_avt):
         sys.exit(exc.returncode)
 
 
+# ── Comando: atualizar ──────────────────────────────────────────────
+
+_UPDATE_BASE = 'https://raw.githubusercontent.com/estevam5s/commitforge/main/cli-commit'
+
+@cli.command()
+@click.option('--pre',     is_flag=True, default=False, help='Instalar versão de pré-lançamento (dev branch)')
+@click.option('--dry-run', is_flag=True, default=False, help='Apenas verificar — não aplicar nada')
+@click.option('--branch',  default='main', help='Branch do GitHub (padrão: main)')
+def atualizar(pre, dry_run, branch):
+    """Atualizar o CommitForge para a versão mais recente.
+
+    \b
+    Baixa o forge.py mais recente do GitHub e substitui a instalação local.
+    Não remove configurações, histórico ou o venv existente.
+
+    \b
+    Exemplos:
+      commitforge atualizar
+      commitforge atualizar --dry-run
+      commitforge atualizar --branch dev
+    """
+    if not HAS_REQUESTS:
+        error('requests não instalado. Instale: pip install requests')
+        sys.exit(1)
+
+    target_branch = 'dev' if pre else branch
+    forge_url = f'https://raw.githubusercontent.com/estevam5s/commitforge/{target_branch}/cli-commit/forge.py'
+    req_url   = f'https://raw.githubusercontent.com/estevam5s/commitforge/{target_branch}/cli-commit/requirements.txt'
+
+    install_dir = os.path.dirname(os.path.abspath(__file__))
+    forge_path  = os.path.join(install_dir, 'forge.py')
+
+    if HAS_RICH:
+        console.print()
+        console.print('[bold green]◈ CommitForge — Verificando atualizações...[/bold green]')
+        console.print(f'[dim]  Fonte: {forge_url}[/dim]')
+        console.print()
+
+    # ── Buscar versão remota ─────────────────────────────────────────
+    try:
+        resp = _requests.get(forge_url, timeout=15)
+        resp.raise_for_status()
+        remote_content = resp.text
+    except Exception as exc:
+        error(f'Não foi possível baixar a atualização: {exc}')
+        out('[dim]Verifique sua conexão com a internet e tente novamente.[/dim]')
+        sys.exit(1)
+
+    # Extrair versão remota
+    remote_version = VERSION
+    for line in remote_content.splitlines():
+        if line.startswith("VERSION"):
+            try:
+                remote_version = line.split('=')[1].strip().strip("'\"")
+            except Exception:
+                pass
+            break
+
+    if HAS_RICH:
+        from rich.table import Table as _T
+        from rich import box as _box
+        tbl = _T(box=_box.SIMPLE, show_header=False, padding=(0, 2))
+        tbl.add_column('k', style='dim')
+        tbl.add_column('v')
+        tbl.add_row('Versão atual',  f'[yellow]{VERSION}[/yellow]')
+        tbl.add_row('Versão remota', f'[green]{remote_version}[/green]')
+        tbl.add_row('Branch',        target_branch)
+        tbl.add_row('Destino',       install_dir)
+        console.print(tbl)
+        console.print()
+    else:
+        print(f'  Atual : {VERSION}')
+        print(f'  Remota: {remote_version}')
+
+    # Comparar versões simples
+    def _ver_tuple(v):
+        try:
+            return tuple(int(x) for x in v.split('.'))
+        except Exception:
+            return (0,)
+
+    if _ver_tuple(remote_version) <= _ver_tuple(VERSION) and not dry_run:
+        success(f'Você já está na versão mais recente ({VERSION}).')
+        out('[dim]Use --branch dev para testar versões de pré-lançamento.[/dim]')
+        return
+
+    if dry_run:
+        if _ver_tuple(remote_version) > _ver_tuple(VERSION):
+            out(f'[bold green]✓ Atualização disponível:[/bold green] {VERSION} → {remote_version}')
+        else:
+            out(f'[dim]Nenhuma atualização disponível. Versão atual: {VERSION}[/dim]')
+        out('[dim][--dry-run] Nenhuma alteração foi feita.[/dim]')
+        return
+
+    # ── Fazer backup do forge.py atual ──────────────────────────────
+    backup_path = forge_path + f'.bak.{VERSION}'
+    try:
+        import shutil as _sh
+        _sh.copy2(forge_path, backup_path)
+        info(f'Backup criado: {backup_path}')
+    except Exception as exc:
+        warn(f'Não foi possível criar backup: {exc}')
+
+    # ── Aplicar atualização ──────────────────────────────────────────
+    try:
+        with open(forge_path, 'w', encoding='utf-8') as fh:
+            fh.write(remote_content)
+    except Exception as exc:
+        error(f'Falha ao gravar atualização: {exc}')
+        # Restaurar backup
+        if os.path.exists(backup_path):
+            import shutil as _sh
+            _sh.copy2(backup_path, forge_path)
+            warn('Backup restaurado automaticamente.')
+        sys.exit(1)
+
+    # ── Atualizar requirements.txt se houver ─────────────────────────
+    try:
+        req_resp = _requests.get(req_url, timeout=10)
+        if req_resp.status_code == 200:
+            req_path = os.path.join(install_dir, 'requirements.txt')
+            with open(req_path, 'w', encoding='utf-8') as fh:
+                fh.write(req_resp.text)
+            info('requirements.txt atualizado.')
+    except Exception:
+        pass
+
+    if HAS_RICH:
+        console.print()
+        console.print(f'[bold green]✓ CommitForge atualizado com sucesso:[/bold green] {VERSION} → [bold]{remote_version}[/bold]')
+        console.print()
+        console.print('[dim]Para instalar novas dependências (se necessário):[/dim]')
+        venv_pip = os.path.join(install_dir, 'venv', 'bin', 'pip')
+        if not os.path.exists(venv_pip):
+            venv_pip = os.path.join(install_dir, 'venv', 'Scripts', 'pip.exe')
+        console.print(f'[dim]  {venv_pip} install -r {os.path.join(install_dir, "requirements.txt")}[/dim]')
+        console.print()
+    else:
+        print(f'\n  ✓ Atualizado: {VERSION} → {remote_version}\n')
+
+
+
 # ── Comando: desinstalar ────────────────────────────────────────────
 
 @cli.command()

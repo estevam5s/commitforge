@@ -54,7 +54,7 @@ interface TerminalSequence {
 
 const terminalSequences: TerminalSequence[] = [
   {
-    command: "python forge.py commit --repo https://github.com/user/repo.git --year 2019 --modo projeto",
+    command: "commitforge commit --repo https://github.com/user/repo.git --year 2019 --modo projeto",
     outputs: [
       { text: "✓ Clonando repositório em /tmp/forge_abc123...", color: "text-green-400" },
       { text: "  [configuração]   6 arquivos → chore: configuração", color: "text-blue-400" },
@@ -64,7 +64,7 @@ const terminalSequences: TerminalSequence[] = [
     ],
   },
   {
-    command: "python forge.py grupos --repo https://github.com/user/repo.git",
+    command: "commitforge grupos --repo https://github.com/user/repo.git",
     outputs: [
       { text: "  GRUPO              ARQUIVOS   MENSAGEM", color: "text-white/40" },
       { text: "  configuração            6     chore: configuração", color: "text-yellow-300" },
@@ -74,7 +74,7 @@ const terminalSequences: TerminalSequence[] = [
     ],
   },
   {
-    command: "python forge.py commit --interativo",
+    command: "commitforge commit --interativo",
     outputs: [
       { text: "? URL do repositório: https://github.com/user/repo.git", color: "text-cyan-400" },
       { text: "? Modo [projeto/arquivo]: projeto", color: "text-cyan-400" },
@@ -93,7 +93,7 @@ const installContent: Record<InstallTab, { code: string; description: string }> 
     code: `docker pull ghcr.io/estevam5s/commitforge:latest
 docker run --rm -e GITHUB_TOKEN=ghp_xxx \\
   ghcr.io/estevam5s/commitforge:latest \\
-  python forge.py commit --repo URL --year 2020`,
+  commitforge commit --repo URL --year 2020`,
     description: "Sem dependências locais. Requer Docker instalado.",
   },
   macos: {
@@ -660,14 +660,14 @@ export default function CommitForgeLanding() {
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-xs text-gray-600">bash</span>
                   <button
-                    onClick={() => copyToClipboard("python forge.py commit --repo URL --year 2019 --modo projeto", "mode-projeto")}
+                    onClick={() => copyToClipboard("commitforge commit --repo URL --year 2019 --modo projeto", "mode-projeto")}
                     className="text-gray-600 hover:text-white transition-colors"
                   >
                     {copiedStates["mode-projeto"] ? <Check className="w-3.5 h-3.5 text-green-400" /> : <Copy className="w-3.5 h-3.5" />}
                   </button>
                 </div>
                 <code className="text-green-300 text-xs whitespace-nowrap">
-                  python forge.py commit --repo URL --year 2019 --modo projeto
+                  commitforge commit --repo URL --year 2019 --modo projeto
                 </code>
               </div>
               <ul className="space-y-2 text-sm text-gray-400">
@@ -696,14 +696,14 @@ export default function CommitForgeLanding() {
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-xs text-gray-600">bash</span>
                   <button
-                    onClick={() => copyToClipboard("python forge.py commit --repo URL --year 2020 --modo arquivo --commits-por-dia 3", "mode-arquivo")}
+                    onClick={() => copyToClipboard("commitforge commit --repo URL --year 2020 --modo arquivo --commits-por-dia 3", "mode-arquivo")}
                     className="text-gray-600 hover:text-white transition-colors"
                   >
                     {copiedStates["mode-arquivo"] ? <Check className="w-3.5 h-3.5 text-green-400" /> : <Copy className="w-3.5 h-3.5" />}
                   </button>
                 </div>
                 <code className="text-green-300 text-xs whitespace-nowrap">
-                  python forge.py commit --repo URL --year 2020 --modo arquivo --commits-por-dia 3
+                  commitforge commit --repo URL --year 2020 --modo arquivo --commits-por-dia 3
                 </code>
               </div>
               <ul className="space-y-2 text-sm text-gray-400">
@@ -728,9 +728,9 @@ export default function CommitForgeLanding() {
           </div>
 
           <div className="max-w-4xl mx-auto space-y-8">
-            {/* forge.py subcommands */}
+            {/* CLI subcommands */}
             <div>
-              <h3 className="text-gray-300 text-sm font-bold mb-3 uppercase tracking-wider">forge.py (Standalone)</h3>
+              <h3 className="text-gray-300 text-sm font-bold mb-3 uppercase tracking-wider">Comandos CLI</h3>
               <div className="bg-black border border-gray-700 rounded-lg overflow-hidden">
                 <div className="flex items-center justify-between px-4 py-2 border-b border-gray-700 bg-gray-900">
                   <div className="flex items-center gap-2 text-xs text-gray-500">
@@ -739,12 +739,12 @@ export default function CommitForgeLanding() {
                   </div>
                   <button
                     onClick={() => copyToClipboard(
-                      `python forge.py commit    # Criar commits retroativos
-python forge.py grupos    # Listar grupos de arquivos
-python forge.py preview   # Prévia de commits
-python forge.py validar-token  # Validar token GitHub
-python forge.py historico # Ver histórico de jobs
-python forge.py servidor  # Iniciar interface web`,
+                      `commitforge commit    # Criar commits retroativos
+commitforge grupos    # Listar grupos de arquivos
+commitforge preview   # Prévia de commits
+commitforge validar-token  # Validar token GitHub
+commitforge historico # Ver histórico de jobs
+commitforge servidor  # Iniciar interface web`,
                       "cli-subcommands"
                     )}
                     className="flex items-center gap-1.5 text-xs text-gray-500 hover:text-white transition-colors"
@@ -756,12 +756,12 @@ python forge.py servidor  # Iniciar interface web`,
                 </div>
                 <div className="p-5 text-sm space-y-1 overflow-x-auto">
                   {[
-                    { cmd: "python forge.py commit",        comment: "Criar commits retroativos" },
-                    { cmd: "python forge.py grupos",        comment: "Listar grupos de arquivos" },
-                    { cmd: "python forge.py preview",       comment: "Prévia de commits" },
-                    { cmd: "python forge.py validar-token", comment: "Validar token GitHub" },
-                    { cmd: "python forge.py historico",     comment: "Ver histórico de jobs" },
-                    { cmd: "python forge.py servidor",      comment: "Iniciar interface web" },
+                    { cmd: "commitforge commit",        comment: "Criar commits retroativos" },
+                    { cmd: "commitforge grupos",        comment: "Listar grupos de arquivos" },
+                    { cmd: "commitforge preview",       comment: "Prévia de commits" },
+                    { cmd: "commitforge validar-token", comment: "Validar token GitHub" },
+                    { cmd: "commitforge historico",     comment: "Ver histórico de jobs" },
+                    { cmd: "commitforge servidor",      comment: "Iniciar interface web" },
                   ].map(({ cmd, comment }) => (
                     <div key={cmd} className="flex gap-4 whitespace-nowrap">
                       <span className="text-green-300">{cmd}</span>
