@@ -1181,23 +1181,117 @@ def cancelar(job):
 # ── Comando: servidor ─────────────────────────────────────────────────
 
 @cli.command()
-@click.option('--porta', '-p', type=int, default=5000)
-def servidor(porta):
-    """Iniciar o servidor Flask com interface web."""
+@click.option('--porta',   '-p', type=int,    default=5000,    help='Porta HTTP (padrão: 5000)')
+@click.option('--host',    '-H', default='0.0.0.0',            help='Host de escuta (padrão: 0.0.0.0)')
+@click.option('--debug',   '-D', is_flag=True, default=False,  help='Ativar modo debug do Flask')
+@click.option('--abrir',   '-o', is_flag=True, default=False,  help='Abrir o navegador automaticamente')
+@click.option('--sem-avt',       is_flag=True, default=False,  help='Ocultar mensagem da AVT ao iniciar')
+def servidor(porta, host, debug, abrir, sem_avt):
+    """Iniciar o servidor Flask com interface web e linha do tempo AVT.
+
+    \b
+    Exemplos:
+      commitforge servidor
+      commitforge servidor --porta 8080
+      commitforge servidor --porta 3000 --abrir
+      commitforge servidor --porta 5001 --debug --host 127.0.0.1
+      commitforge servidor --sem-avt
+    """
     import subprocess
+    import socket
+
     app_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'app.py')
     if not os.path.exists(app_path):
         error(f'app.py não encontrado em {os.path.dirname(app_path)}')
+        out('[dim]Certifique-se de que o CommitForge foi instalado corretamente.[/dim]')
         sys.exit(1)
-    out(f'[bold]→ Iniciando servidor na porta {porta}...[/bold]')
-    out(f'[dim]  http://localhost:{porta}[/dim]\n')
+
+    # ── Verificar se a porta já está em uso ──────────────────────────
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as _s:
+        if _s.connect_ex(('localhost', porta)) == 0:
+            warn(f'Porta {porta} já está em uso.')
+            for candidata in range(porta + 1, porta + 20):
+                with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as _s2:
+                    if _s2.connect_ex(('localhost', candidata)) != 0:
+                        porta = candidata
+                        warn(f'Usando porta alternativa: {porta}')
+                        break
+            else:
+                error('Nenhuma porta livre encontrada no intervalo. Use --porta para especificar outra.')
+                sys.exit(1)
+
+    # ── Banner AVT ───────────────────────────────────────────────────
+    if not sem_avt and HAS_RICH:
+        console.print()
+        console.print('[bold yellow]╔══════════════════════════════════════════════════════╗[/bold yellow]')
+        console.print('[bold yellow]║[/bold yellow]      [bold white]AVT — AUTORIDADE DE VARIÂNCIA TEMPORAL[/bold white]       [bold yellow]║[/bold yellow]')
+        console.print('[bold yellow]╠══════════════════════════════════════════════════════╣[/bold yellow]')
+        console.print('[bold yellow]║[/bold yellow]  [dim]A AVT está de olho. Cada commit retroativo que você[/dim]  [bold yellow]║[/bold yellow]')
+        console.print('[bold yellow]║[/bold yellow]  [dim]cria [/dim][bold green]altera a Linha do Tempo Sagrada[/bold green][dim].[/dim]              [bold yellow]║[/bold yellow]')
+        console.print('[bold yellow]║[/bold yellow]  [bold red]Eventos Nexus (commits no futuro) serão monitorados.[/bold red] [bold yellow]║[/bold yellow]')
+        console.print('[bold yellow]║[/bold yellow]                                                        [bold yellow]║[/bold yellow]')
+        console.print('[bold yellow]║[/bold yellow]  [italic dim]— Mobius M. Mobius, Analista TVA Nível 4[/italic dim]            [bold yellow]║[/bold yellow]')
+        console.print('[bold yellow]╚══════════════════════════════════════════════════════╝[/bold yellow]')
+        console.print()
+
+    # ── Tabela de URLs ───────────────────────────────────────────────
+    local_url    = f'http://localhost:{porta}'
+    timeline_url = f'http://localhost:{porta}/timeline'
+    health_url   = f'http://localhost:{porta}/api/health'
+
+    if HAS_RICH:
+        from rich.table import Table as _T
+        from rich import box as _box
+        tbl = _T(box=_box.ROUNDED, border_style='green', show_header=False, padding=(0, 2))
+        tbl.add_column('chave', style='dim', min_width=22)
+        tbl.add_column('valor')
+        tbl.add_row('Interface principal',  f'[bold cyan]{local_url}[/bold cyan]')
+        tbl.add_row('◈ Linha do tempo AVT', f'[bold yellow]{timeline_url}[/bold yellow]')
+        tbl.add_row('API health check',     f'[dim]{health_url}[/dim]')
+        tbl.add_row('Porta',               f'[green]{porta}[/green]')
+        tbl.add_row('Host',                host)
+        tbl.add_row('Debug',               '[yellow]sim[/yellow]' if debug else '[dim]não[/dim]')
+        console.print(tbl)
+        console.print()
+        console.print('[dim]Pressione [bold]Ctrl+C[/bold] para encerrar o servidor.[/dim]')
+        console.print()
+    else:
+        print(f'\n  CommitForge — Servidor Flask')
+        print(f'  Interface : {local_url}')
+        print(f'  AVT       : {timeline_url}')
+        print(f'  Porta     : {porta}')
+        print(f'  Ctrl+C para encerrar\n')
+
+    # ── Abrir navegador ──────────────────────────────────────────────
+    if abrir:
+        import threading as _th
+        def _open_browser():
+            import time as _t
+            _t.sleep(2)
+            import webbrowser
+            webbrowser.open(local_url)
+        _th.Thread(target=_open_browser, daemon=True).start()
+
+    # ── Iniciar Flask ────────────────────────────────────────────────
     env = os.environ.copy()
-    env['PORT'] = str(porta)
+    env['PORT']  = str(porta)
+    env['HOST']  = host
+    env['DEBUG'] = 'true' if debug else 'false'
     try:
-        subprocess.run([sys.executable, app_path], check=True, env=env,
-                       cwd=os.path.dirname(app_path))
+        subprocess.run(
+            [sys.executable, app_path],
+            check=True, env=env,
+            cwd=os.path.dirname(app_path),
+        )
     except KeyboardInterrupt:
-        out('\n[dim]Servidor encerrado.[/dim]')
+        if HAS_RICH:
+            console.print()
+            console.print('[dim]Servidor encerrado. Até a próxima, variante.[/dim]')
+        else:
+            print('\nServidor encerrado.')
+    except subprocess.CalledProcessError as exc:
+        error(f'Servidor encerrado com erro (código {exc.returncode})')
+        sys.exit(exc.returncode)
 
 
 # ── Comando: desinstalar ────────────────────────────────────────────

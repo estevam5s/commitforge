@@ -334,22 +334,72 @@ commitforge preview --help
 
 ---
 
-## 🖥 Interface Web
+## 🖥 Interface Web — Servidor Flask
+
+O servidor Flask é iniciado diretamente pela CLI `commitforge` com o comando `servidor`.
+
+### Iniciando o servidor
 
 ```bash
-# Iniciar via CLI
-commitforge servidor --porta 5000
+# Porta padrão (5000)
+commitforge servidor
 
-# Ou direto
-cd cli-commit && python app.py
+# Porta customizada
+commitforge servidor --porta 8080
+commitforge servidor -p 3000
 
-# Com variáveis de ambiente
-PORT=8080 DEBUG=false python app.py
+# Abrir o navegador automaticamente ao iniciar
+commitforge servidor --porta 5001 --abrir
+
+# Modo debug (recarrega automaticamente ao editar código)
+commitforge servidor --porta 5000 --debug
+
+# Host específico (ex: acessível na rede local)
+commitforge servidor --porta 5000 --host 0.0.0.0
+
+# Sem o banner da AVT
+commitforge servidor --sem-avt
+
+# Combinações
+commitforge servidor --porta 8080 --abrir --debug
+commitforge servidor --porta 9000 --host 127.0.0.1 --sem-avt
 ```
 
-Acesse **http://localhost:5000** no navegador.
+### Flags disponíveis
 
-**Funcionalidades da interface:**
+| Flag | Atalho | Padrão | Descrição |
+|------|--------|--------|-----------|
+| `--porta` | `-p` | `5000` | Porta HTTP do servidor |
+| `--host` | `-H` | `0.0.0.0` | Interface de rede para escutar |
+| `--debug` | `-D` | `false` | Ativar modo debug (hot-reload) |
+| `--abrir` | `-o` | `false` | Abrir navegador automaticamente |
+| `--sem-avt` | — | `false` | Ocultar banner da AVT ao iniciar |
+
+> **Detecção automática de porta:** se a porta solicitada já estiver em uso (ex: AirPlay no macOS ocupa a 5000), o CommitForge detecta e sugere automaticamente a próxima disponível.
+
+### URLs disponíveis após iniciar
+
+| URL | Descrição |
+|-----|-----------|
+| `http://localhost:PORTA/` | Interface principal — criar commits |
+| `http://localhost:PORTA/timeline` | ◈ Linha do Tempo AVT |
+| `http://localhost:PORTA/api/health` | Status do servidor |
+| `http://localhost:PORTA/api/stats` | Estatísticas da sessão |
+| `http://localhost:PORTA/api/history` | Histórico de jobs |
+
+### Linha do Tempo AVT
+
+<img src="cli-commit/static/avt.svg" alt="AVT — Linha do Tempo" width="100%"/>
+
+Ao acessar `/timeline`, você entra na interface da **AVT (Autoridade de Variância Temporal)** — uma visualização interativa inspirada na série Loki (Disney+) que mostra todos os seus commits como pontos na **Linha do Tempo Sagrada**:
+
+- 🟢 **Commits no passado** → nós verdes sobre a linha sagrada
+- 🟠 **Branches alternativas** → arcos laranjas divergindo da linha principal
+- 🔴 **Commits no futuro** → Eventos Nexus pulsantes na zona proibida
+- 🟡 **TVA HQ** → marcador dourado no ano atual
+- ⚠️ **Alertas da AVT** → mensagens de Mobius, Hunter B-15, He Who Remains...
+
+**Funcionalidades da interface principal:**
 - Formulário com todos os parâmetros
 - Seletor visual de modo (projeto / arquivo)
 - Progresso em tempo real com barra animada

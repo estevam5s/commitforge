@@ -1140,8 +1140,9 @@ def server_error(e):
 
 
 if __name__ == '__main__':
-    port = int(os.getenv('PORT', 5000))
+    port  = int(os.getenv('PORT', 5000))
+    host  = os.getenv('HOST', '0.0.0.0')
     debug = os.getenv('DEBUG', 'true').lower() == 'true'
-    logger.info(f"CommitForge v{VERSION} — http://0.0.0.0:{port}")
-    logger.info(f"Endpoints: /api/health | /api/stats | /api/groups | /api/history")
-    app.run(debug=debug, host='0.0.0.0', port=port)
+    logger.info(f"CommitForge v{VERSION} — http://{host}:{port}")
+    logger.info(f"Endpoints: /api/health | /api/stats | /api/groups | /api/history | /timeline")
+    app.run(debug=debug, host=host, port=port)
