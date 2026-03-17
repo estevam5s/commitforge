@@ -1,0 +1,47 @@
+# Arquivos de ambiente Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Ambientes virtuais
+venv/
+ENV/
+.env
+
+# Repositórios clonados
+repos/
+
+# Logs
+*.log
+logs/
+
+# Arquivos do IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+.DS_Store
+
+# Arquivos de configuração local
+.env.local
+.env.*.local
+
+# Caches
+.cache/

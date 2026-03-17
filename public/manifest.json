@@ -1,0 +1,67 @@
+{
+  "name": "CommitForge — CLI para Commits Retroativos no Git",
+  "short_name": "CommitForge",
+  "description": "CLI open-source para criar commits retroativos no Git com datas do passado. Suporta GitHub, GitLab e Bitbucket.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#000000",
+  "theme_color": "#000000",
+  "orientation": "any",
+  "scope": "/",
+  "lang": "pt-BR",
+  "dir": "ltr",
+  "categories": ["developer", "utilities", "productivity"],
+  "screenshots": [
+    {
+      "src": "/og-image.png",
+      "sizes": "1200x630",
+      "type": "image/png",
+      "form_factor": "wide",
+      "label": "CommitForge — Tela principal"
+    }
+  ],
+  "icons": [
+    {
+      "src": "/sistema-icon.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/sistema-icon.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/sistema-icon.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Documentação",
+      "short_name": "Docs",
+      "description": "Abrir documentação completa",
+      "url": "/docs",
+      "icons": [{ "src": "/sistema-icon.png", "sizes": "96x96" }]
+    },
+    {
+      "name": "Guia Git",
+      "short_name": "Git",
+      "description": "Guia completo de comandos Git",
+      "url": "/git",
+      "icons": [{ "src": "/sistema-icon.png", "sizes": "96x96" }]
+    }
+  ],
+  "prefer_related_applications": false,
+  "display_override": ["window-controls-overlay", "standalone", "browser"]
+}

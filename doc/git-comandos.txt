@@ -1,0 +1,77 @@
+=======================================================================
+  COMANDOS GIT — ZERAR HISTÓRICO DE COMMITS (ALTERAÇÕES INTACTAS)
+=======================================================================
+
+OBJETIVO:
+  Squash de todos os commits em um único commit inicial,
+  preservando 100% dos arquivos e alterações no working tree.
+
+-----------------------------------------------------------------------
+PASSO A PASSO
+-----------------------------------------------------------------------
+
+# 1. Criar um branch órfão (sem histórico)
+git checkout --orphan squash-temp
+
+# 2. Adicionar todos os arquivos ao stage
+git add -A
+
+# 3. Criar o único commit inicial
+git commit -m "feat: CommitForge v1.0.0 — sistema completo de commits retroativos"
+
+# 4. Deletar o branch main local
+git branch -D main
+
+# 5. Renomear o branch órfão para main
+git branch -m squash-temp main
+
+# 6. Forçar o push para o repositório remoto (IRREVERSÍVEL no remoto)
+git push --force origin main
+
+-----------------------------------------------------------------------
+COMANDO ÚNICO (encadeado)
+-----------------------------------------------------------------------
+
+git checkout --orphan squash-temp \
+  && git add -A \
+  && git commit -m "feat: commit inicial" \
+  && git branch -D main \
+  && git branch -m squash-temp main \
+  && git push --force origin main
+
+-----------------------------------------------------------------------
+VERIFICAR RESULTADO
+-----------------------------------------------------------------------
+
+# Checar que só existe 1 commit
+git log --oneline
+
+# Ver status atual
+git status
+
+-----------------------------------------------------------------------
+NOTAS IMPORTANTES
+-----------------------------------------------------------------------
+
+  ⚠  git push --force é DESTRUTIVO no repositório remoto.
+     O histórico antigo não pode ser recuperado após o push.
+
+  ✔  Todos os arquivos permanecem intactos no working tree.
+  ✔  Branches locais antigos são deletados, mas o código fica.
+  ✔  Branches remotos (ex: historico-2019) NÃO são afetados.
+
+  Se houver branches protegidos no GitHub (branch protection rules),
+  o force push será bloqueado — desative a proteção antes.
+
+-----------------------------------------------------------------------
+DESFAZER (somente local, antes do push)
+-----------------------------------------------------------------------
+
+# Se ainda não fez push, pode voltar com reflog
+git reflog
+git reset --hard HEAD@{N}   # substitua N pelo índice desejado
+
+-----------------------------------------------------------------------
+AUTOR: Estevam Souza — github.com/estevam5s
+DATA:  2026-03-17
+=======================================================================

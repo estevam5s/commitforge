@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CommitForge — Commits Retroativos no Git</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+</head>
+<body>
+    <div class="navbar">
+        <div class="logo">
+            <i class="fas fa-code-branch"></i>
+            <h1>CommitForge</h1>
+        </div>
+        <div class="theme-switch">
+            <i class="fas fa-moon"></i>
+            <label class="switch">
+                <input type="checkbox" id="theme-toggle">
+                <span class="slider round"></span>
+            </label>
+            <i class="fas fa-sun"></i>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="header">
+            <h1>Commits Retroativos no Git</h1>
+            <p>Crie contribuições com datas do passado no GitHub, GitLab ou Bitbucket</p>
+        </div>
+
+        <div class="tabs">
+            <button class="tab-btn active" data-tab="create">Criar Commits</button>
+            <button class="tab-btn" data-tab="history">Histórico</button>
+            <button class="tab-btn" data-tab="about">Sobre</button>
+        </div>
+
+        <!-- Aba: Criar Commits -->
+        <div class="tab-content active" id="create">
+            <div class="form-container">
+                <form id="commit-form">
+
+                    <!-- URL do repositório -->
+                    <div class="form-group">
+                        <label for="repo-url">URL do Repositório Git <span class="required">*</span></label>
+                        <input type="text" id="repo-url"
+                            placeholder="https://github.com/username/repo.git" required>
+                        <small>URL HTTPS ou SSH do repositório no GitHub / GitLab / Bitbucket</small>
+                    </div>
+
+                    <!-- Modo de commit -->
+                    <div class="form-group">
+                        <label>Modo de Commit <span class="required">*</span></label>
+                        <div class="radio-group">
+                            <label class="radio-label">
+                                <input type="radio" name="commit-mode" value="projeto" id="commit-mode-projeto" checked>
+                                Projeto (arquivos reais)
+                            </label>
+                            <label class="radio-label">
+                                <input type="radio" name="commit-mode" value="arquivo" id="commit-mode-arquivo">
+                                Arquivo (log único)
+                            </label>
+                        </div>
+                        <small id="commit-mode-desc">Commita os arquivos reais do repositório agrupados semanticamente por tipo</small>
+                    </div>
+
+                    <!-- Modo de data -->
+                    <div class="form-group">
+                        <label>Modo de Data <span class="required">*</span></label>
+                        <div class="radio-group">
+                            <label class="radio-label">
+                                <input type="radio" name="date-mode" value="year" id="mode-year" checked>
+                                Por Ano
+                            </label>
+                            <label class="radio-label">
+                                <input type="radio" name="date-mode" value="range" id="mode-range">
+                                Intervalo de Datas
+                            </label>
+                            <label class="radio-label">
+                                <input type="radio" name="date-mode" value="days" id="mode-days">
+                                Últimos N Dias
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Campo: Por Ano -->
+                    <div class="form-group date-mode-field" id="field-year">
+                        <label for="year-input">Ano <span class="required">*</span></label>
+                        <input type="number" id="year-input" min="2000" max="2099" value="2020" placeholder="2020">
+                        <small>Serão criados commits de 01/jan até 31/dez do ano informado</small>
+                    </div>
+
+                    <!-- Campo: Intervalo de Datas -->
+                    <div class="form-group date-mode-field" id="field-range" style="display:none">
+                        <div class="date-range-inputs">
+                            <div>
+                                <label for="start-date">Data de Início <span class="required">*</span></label>
+                                <input type="date" id="start-date">
+                            </div>
+                            <div>
+                                <label for="end-date">Data de Fim <span class="required">*</span></label>
+                                <input type="date" id="end-date">
+                            </div>
+                        </div>
+                        <small>Commits serão criados para todos os dias do intervalo</small>
+                    </div>
+
+                    <!-- Campo: Últimos N Dias -->
+                    <div class="form-group date-mode-field" id="field-days" style="display:none">
+                        <label for="num-days">Número de Dias <span class="required">*</span></label>
+                        <input type="number" id="num-days" min="1" max="5000" value="30">
+                        <div class="range-container">
+                            <input type="range" id="days-range" min="1" max="5000" value="30">
+                            <div class="range-values">
+                                <span>1</span>
+                                <span>5000</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Opções Avançadas -->
+                    <div class="advanced-options">
+                        <div class="advanced-header">
+                            <h3>Opções Avançadas</h3>
+                            <button type="button" id="toggle-advanced">
+                                <i class="fas fa-chevron-down"></i>
+                            </button>
+                        </div>
+                        <div class="advanced-content">
+
+                            <div class="form-group">
+                                <label for="commits-per-day">Commits por Dia</label>
+                                <input type="number" id="commits-per-day" min="1" max="10" value="1">
+                                <small>Quantos commits criar em cada dia (máximo: 10)</small>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="commit-message">Mensagem de Commit</label>
+                                <input type="text" id="commit-message"
+                                    placeholder="Commit retroativo: {date}"
+                                    value="Commit retroativo: {date}">
+                                <small>Use <code>{date}</code> como placeholder para a data do commit</small>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="filename">Nome do Arquivo</label>
+                                <input type="text" id="filename" placeholder="data.txt" value="data.txt">
+                                <small>Arquivo que será modificado em cada commit</small>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="custom-username">Nome de Autor Git (Opcional)</label>
+                                <input type="text" id="custom-username"
+                                    placeholder="Nome exibido nos commits">
+                            </div>
+
+                            <div class="form-group">
+                                <label for="custom-email">Email Git (Opcional)</label>
+                                <input type="email" id="custom-email"
+                                    placeholder="email@exemplo.com">
+                            </div>
+
+                            <div class="form-group">
+                                <label for="github-token">Token do GitHub</label>
+                                <div class="token-input-container">
+                                    <input type="password" id="github-token"
+                                        placeholder="ghp_xxxxxxxxxxxxxxxxx">
+                                    <button type="button" id="toggle-token-visibility" class="btn icon-btn">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
+                                    <button type="button" id="validate-token" class="btn icon-btn">
+                                        <i class="fas fa-check-circle"></i>
+                                    </button>
+                                </div>
+                                <small>Token de acesso pessoal para autenticação no push</small>
+                                <div id="token-validation-result" class="validation-result"></div>
+                            </div>
+
+                            <div class="form-group checkbox-group">
+                                <input type="checkbox" id="push-option" checked>
+                                <label for="push-option">Enviar commits para o repositório remoto</label>
+                            </div>
+
+                            <div class="form-group checkbox-group">
+                                <input type="checkbox" id="random-times">
+                                <label for="random-times">Usar horários aleatórios (mais natural)</label>
+                            </div>
+
+                            <div class="form-group checkbox-group">
+                                <input type="checkbox" id="skip-weekends">
+                                <label for="skip-weekends">Pular fins de semana (apenas dias úteis)</label>
+                            </div>
+
+                            <div class="form-group" id="branch-name-field">
+                                <label for="branch-name">Nome do Branch (Opcional)</label>
+                                <input type="text" id="branch-name" placeholder="historico-2019">
+                                <small>Branch onde os commits serão criados (modo Projeto)</small>
+                            </div>
+
+                            <div class="form-group checkbox-group">
+                                <input type="checkbox" id="use-api" checked>
+                                <label for="use-api">Usar API do GitHub (necessário para repos privados)</label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Prévia antes de enviar -->
+                    <div id="preview-section" class="preview-section" style="display:none">
+                        <h4>Prévia</h4>
+                        <div id="preview-content"></div>
+                    </div>
+
+                    <div class="button-group">
+                        <button type="button" id="preview-btn" class="btn secondary-btn">
+                            <i class="fas fa-eye"></i> Prévia
+                        </button>
+                        <button type="submit" class="btn primary-btn">
+                            <i class="fas fa-play"></i> Iniciar Processo
+                        </button>
+                        <button type="reset" class="btn secondary-btn">
+                            <i class="fas fa-undo"></i> Limpar
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Aba: Histórico -->
+        <div class="tab-content" id="history">
+            <div class="history-container">
+                <div class="history-header">
+                    <h2>Histórico de Processos</h2>
+                    <button id="refresh-history" class="btn icon-btn">
+                        <i class="fas fa-sync-alt"></i>
+                    </button>
+                </div>
+                <div class="jobs-list">
+                    <div class="empty-state">
+                        <i class="fas fa-history fa-3x"></i>
+                        <p>Nenhum processo encontrado</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Aba: Sobre -->
+        <div class="tab-content" id="about">
+            <div class="about-container">
+                <div class="about-header">
+                    <i class="fas fa-code-branch fa-3x"></i>
+                    <h2>CommitForge v2.0</h2>
+                </div>
+                <div class="about-content">
+                    <p>CommitForge é uma ferramenta para criação automatizada de commits retroativos no GitHub,
+                    GitLab e Bitbucket. Permite preencher o histórico de contribuições com datas do passado.</p>
+
+                    <h3>Como funciona?</h3>
+                    <p>O CommitForge clona seu repositório, cria commits com datas retroativas usando as variáveis
+                    <code>GIT_AUTHOR_DATE</code> e <code>GIT_COMMITTER_DATE</code> do Git e, opcionalmente,
+                    os envia para o repositório remoto via push forçado.</p>
+
+                    <h3>Modos de Data</h3>
+                    <ul>
+                        <li><strong>Por Ano:</strong> preenche um ano inteiro (ex: 2020)</li>
+                        <li><strong>Intervalo:</strong> datas específicas de início e fim</li>
+                        <li><strong>Últimos N Dias:</strong> retroativos a partir de hoje</li>
+                    </ul>
+
+                    <h3>Recursos</h3>
+                    <ul>
+                        <li>Até 5000 commits por processo</li>
+                        <li>Múltiplos commits por dia (até 10)</li>
+                        <li>Horários aleatórios para look natural</li>
+                        <li>Opção de pular fins de semana</li>
+                        <li>Personalização de mensagem e autor</li>
+                        <li>Monitoramento em tempo real do progresso</li>
+                        <li>Autenticação via token do GitHub</li>
+                        <li>Interface Web + CLI no terminal</li>
+                    </ul>
+
+                    <h3>CLI no Terminal</h3>
+                    <pre><code>pip install commitforge
+commitforge commit --repo https://github.com/user/repo.git --year 2020
+commitforge status
+commitforge historico</code></pre>
+
+                    <h3>Uso Responsável</h3>
+                    <p>Esta ferramenta foi criada para fins legítimos como migração de repositórios,
+                    testes de workflow Git e demonstrações. Use com responsabilidade e em conformidade
+                    com as políticas da plataforma que você utiliza.</p>
+
+                    <div class="about-footer">
+                        <p>Versão 2.0.0</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de Progresso -->
+    <div id="modal-overlay" class="modal-overlay">
+        <div id="job-modal" class="modal">
+            <div class="modal-header">
+                <h2>Progresso do Processo</h2>
+                <button class="close-modal">&times;</button>
+            </div>
+            <div class="modal-content">
+                <div class="progress-info">
+                    <p><strong>Repositório:</strong> <span id="modal-repo-url"></span></p>
+                    <p><strong>Período:</strong> <span id="modal-period">-</span></p>
+                    <p><strong>Status:</strong> <span id="modal-status">Iniciando...</span></p>
+                    <p><strong>Commits:</strong> <span id="modal-commits-made">0</span> / <span id="modal-commits">0</span></p>
+                    <p><strong>Tempo Decorrido:</strong> <span id="modal-elapsed-time">00:00</span></p>
+                </div>
+                <div class="progress-container">
+                    <div class="progress-bar">
+                        <div class="progress" id="job-progress"></div>
+                    </div>
+                    <div class="progress-text">
+                        <span id="progress-percentage">0%</span>
+                    </div>
+                </div>
+                <div class="status-log">
+                    <h3>Log de Status</h3>
+                    <div id="status-log-content"></div>
+                </div>
+                <div class="modal-actions">
+                    <button id="cancel-job" class="btn danger-btn">
+                        <i class="fas fa-stop-circle"></i> Cancelar Processo
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="toast-container"></div>
+
+    <footer>
+        <p>&copy; 2026 CommitForge. Commite no passado. Controle seu histórico.</p>
+    </footer>
+
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+</body>
+</html>
