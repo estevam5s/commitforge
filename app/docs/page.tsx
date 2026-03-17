@@ -4,7 +4,7 @@ import { useState } from "react"
 import { Copy, Check, Menu, X, ChevronRight, Terminal, Zap, Settings, Book, Code, Rocket } from "lucide-react"
 
 export default function DocsPage() {
-  const [activeSection, setActiveSection] = useState("getting-started")
+  const [activeSection, setActiveSection] = useState("comecar")
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [copiedStates, setCopiedStates] = useState<{ [key: string]: boolean }>({})
 
@@ -16,73 +16,74 @@ export default function DocsPage() {
         setCopiedStates((prev) => ({ ...prev, [key]: false }))
       }, 2000)
     } catch (err) {
-      console.error("Failed to copy text: ", err)
+      console.error("Falha ao copiar texto: ", err)
     }
   }
 
   const sidebarSections = [
     {
-      title: "Getting Started",
-      id: "getting-started",
+      title: "Início Rápido",
+      id: "comecar",
       icon: Rocket,
       items: [
-        { title: "Installation", id: "installation" },
-        { title: "Quick Start", id: "quick-start" },
-        { title: "Configuration", id: "configuration" },
+        { title: "Instalação", id: "instalacao" },
+        { title: "Primeiro Uso", id: "primeiro-uso" },
+        { title: "Configuração", id: "configuracao" },
       ],
     },
     {
-      title: "Commands",
-      id: "commands",
+      title: "Comandos",
+      id: "comandos",
       icon: Terminal,
       items: [
-        { title: "hexa-cli init", id: "init" },
-        { title: "hexa-cli generate", id: "generate" },
-        { title: "hexa-cli review", id: "review" },
-        { title: "hexa-cli deploy", id: "deploy" },
+        { title: "commitforge init", id: "cmd-init" },
+        { title: "commitforge commit", id: "cmd-commit" },
+        { title: "commitforge push", id: "cmd-push" },
+        { title: "commitforge status", id: "cmd-status" },
       ],
     },
     {
-      title: "AI Models",
-      id: "models",
+      title: "Modos de Data",
+      id: "modos-data",
       icon: Zap,
       items: [
-        { title: "Model Selection", id: "model-selection" },
-        { title: "Custom Models", id: "custom-models" },
-        { title: "Model Configuration", id: "model-config" },
+        { title: "Por Ano", id: "modo-ano" },
+        { title: "Por Intervalo", id: "modo-intervalo" },
+        { title: "Por Quantidade", id: "modo-quantidade" },
       ],
     },
     {
-      title: "Integrations",
-      id: "integrations",
+      title: "Autenticação",
+      id: "autenticacao",
       icon: Settings,
       items: [
-        { title: "IDE Setup", id: "ide-setup" },
-        { title: "CI/CD Integration", id: "cicd" },
-        { title: "Custom Agents", id: "custom-agents" },
+        { title: "Token do GitHub", id: "token-github" },
+        { title: "GitLab e Bitbucket", id: "outros-tokens" },
+        { title: "Variáveis de Ambiente", id: "env-vars" },
       ],
     },
     {
-      title: "API Reference",
+      title: "API e Integração",
       id: "api",
       icon: Code,
       items: [
-        { title: "CLI API", id: "cli-api" },
-        { title: "Configuration API", id: "config-api" },
-        { title: "Plugin API", id: "plugin-api" },
+        { title: "API REST", id: "api-rest" },
+        { title: "Interface Web", id: "interface-web" },
+        { title: "Docker", id: "docker" },
       ],
     },
   ]
 
   const renderContent = () => {
     switch (activeSection) {
-      case "getting-started":
+      case "comecar":
         return (
           <div className="space-y-8">
             <div>
-              <h1 className="text-4xl font-bold mb-4 text-white">Getting Started with HEXA CLI</h1>
+              <h1 className="text-4xl font-bold mb-4 text-white">Início Rápido com CommitForge</h1>
               <p className="text-xl text-gray-400 mb-8">
-                HEXA CLI is an AI-powered development tool that helps you ship faster from your terminal.
+                CommitForge é uma CLI para criar commits retroativos no Git. Commite projetos em anos do passado
+                diretamente do seu terminal.
               </p>
             </div>
 
@@ -91,22 +92,53 @@ export default function DocsPage() {
                 <div className="w-8 h-8 bg-gray-900 border border-gray-600 flex items-center justify-center">
                   <span className="text-sm font-mono text-white">01</span>
                 </div>
-                Installation
+                Instalação
               </h2>
-              <p className="text-gray-400 mb-4">Install HEXA CLI globally using npm:</p>
+              <p className="text-gray-400 mb-4">Instale o CommitForge globalmente via pip:</p>
               <div
                 className="bg-black border border-gray-700 p-4 font-mono text-sm cursor-pointer hover:border-gray-500 transition-colors flex items-center justify-between"
-                onClick={() => copyToClipboard("npm install -g hexa-cli", "install-cmd")}
+                onClick={() => copyToClipboard("pip install commitforge", "install-cmd")}
               >
                 <div className="flex items-center gap-2">
                   <span className="text-gray-500">$</span>
-                  <span className="text-white">npm install -g hexa-cli</span>
+                  <span className="text-white">pip install commitforge</span>
                 </div>
                 {copiedStates["install-cmd"] ? (
                   <Check className="w-4 h-4 text-green-400" />
                 ) : (
                   <Copy className="w-4 h-4 text-gray-400 hover:text-white transition-colors" />
                 )}
+              </div>
+              <p className="text-gray-400 mt-4 mb-3">Ou clone e instale manualmente:</p>
+              <div className="space-y-2">
+                <div
+                  className="bg-black border border-gray-700 p-4 font-mono text-sm cursor-pointer hover:border-gray-500 transition-colors flex items-center justify-between"
+                  onClick={() => copyToClipboard("git clone https://github.com/seu-usuario/commitforge", "clone-cmd")}
+                >
+                  <div className="flex items-center gap-2">
+                    <span className="text-gray-500">$</span>
+                    <span className="text-white">git clone https://github.com/seu-usuario/commitforge</span>
+                  </div>
+                  {copiedStates["clone-cmd"] ? (
+                    <Check className="w-4 h-4 text-green-400" />
+                  ) : (
+                    <Copy className="w-4 h-4 text-gray-400 hover:text-white transition-colors" />
+                  )}
+                </div>
+                <div
+                  className="bg-black border border-gray-700 p-4 font-mono text-sm cursor-pointer hover:border-gray-500 transition-colors flex items-center justify-between"
+                  onClick={() => copyToClipboard("cd commitforge/cli-commit && pip install -r requirements.txt", "req-cmd")}
+                >
+                  <div className="flex items-center gap-2">
+                    <span className="text-gray-500">$</span>
+                    <span className="text-white">cd commitforge/cli-commit && pip install -r requirements.txt</span>
+                  </div>
+                  {copiedStates["req-cmd"] ? (
+                    <Check className="w-4 h-4 text-green-400" />
+                  ) : (
+                    <Copy className="w-4 h-4 text-gray-400 hover:text-white transition-colors" />
+                  )}
+                </div>
               </div>
             </div>
 
@@ -115,17 +147,17 @@ export default function DocsPage() {
                 <div className="w-8 h-8 bg-gray-900 border border-gray-600 flex items-center justify-center">
                   <span className="text-sm font-mono text-white">02</span>
                 </div>
-                Quick Start
+                Primeiro Uso
               </h2>
-              <p className="text-gray-400 mb-4">Initialize your first AI-powered project:</p>
+              <p className="text-gray-400 mb-4">Crie seus primeiros commits retroativos em 3 comandos:</p>
               <div className="space-y-3">
                 <div
                   className="bg-black border border-gray-700 p-4 font-mono text-sm cursor-pointer hover:border-gray-500 transition-colors flex items-center justify-between"
-                  onClick={() => copyToClipboard("hexa-cli init my-project", "init-cmd")}
+                  onClick={() => copyToClipboard("commitforge init --repo https://github.com/seu-usuario/meu-repo.git --token SEU_TOKEN", "init-cmd")}
                 >
                   <div className="flex items-center gap-2">
                     <span className="text-gray-500">$</span>
-                    <span className="text-white">hexa-cli init my-project</span>
+                    <span className="text-white">commitforge init --repo https://github.com/user/repo.git --token SEU_TOKEN</span>
                   </div>
                   {copiedStates["init-cmd"] ? (
                     <Check className="w-4 h-4 text-green-400" />
@@ -135,13 +167,13 @@ export default function DocsPage() {
                 </div>
                 <div
                   className="bg-black border border-gray-700 p-4 font-mono text-sm cursor-pointer hover:border-gray-500 transition-colors flex items-center justify-between"
-                  onClick={() => copyToClipboard("cd my-project", "cd-cmd")}
+                  onClick={() => copyToClipboard("commitforge commit --year 2020 --dias 365 --aleatorio", "commit-first-cmd")}
                 >
                   <div className="flex items-center gap-2">
                     <span className="text-gray-500">$</span>
-                    <span className="text-white">cd my-project</span>
+                    <span className="text-white">commitforge commit --year 2020 --dias 365 --aleatorio</span>
                   </div>
-                  {copiedStates["cd-cmd"] ? (
+                  {copiedStates["commit-first-cmd"] ? (
                     <Check className="w-4 h-4 text-green-400" />
                   ) : (
                     <Copy className="w-4 h-4 text-gray-400 hover:text-white transition-colors" />
@@ -149,15 +181,13 @@ export default function DocsPage() {
                 </div>
                 <div
                   className="bg-black border border-gray-700 p-4 font-mono text-sm cursor-pointer hover:border-gray-500 transition-colors flex items-center justify-between"
-                  onClick={() =>
-                    copyToClipboard("hexa-cli generate --model gpt-5 'Create a React component'", "generate-cmd")
-                  }
+                  onClick={() => copyToClipboard("commitforge push --force", "push-first-cmd")}
                 >
                   <div className="flex items-center gap-2">
                     <span className="text-gray-500">$</span>
-                    <span className="text-white">hexa-cli generate --model gpt-5 "Create a React component"</span>
+                    <span className="text-white">commitforge push --force</span>
                   </div>
-                  {copiedStates["generate-cmd"] ? (
+                  {copiedStates["push-first-cmd"] ? (
                     <Check className="w-4 h-4 text-green-400" />
                   ) : (
                     <Copy className="w-4 h-4 text-gray-400 hover:text-white transition-colors" />
@@ -171,49 +201,49 @@ export default function DocsPage() {
                 <div className="w-8 h-8 bg-gray-900 border border-gray-600 flex items-center justify-center">
                   <span className="text-sm font-mono text-white">03</span>
                 </div>
-                What's Next?
+                O Que Fazer Agora?
               </h2>
               <div className="grid md:grid-cols-2 gap-4">
                 <div
                   className="border border-gray-700 p-4 hover:border-gray-500 transition-colors cursor-pointer"
-                  onClick={() => setActiveSection("configuration")}
+                  onClick={() => setActiveSection("modo-ano")}
                 >
-                  <h3 className="text-white font-bold mb-2">Configure AI Models</h3>
-                  <p className="text-gray-400 text-sm">Set up your preferred AI models and customize settings</p>
+                  <h3 className="text-white font-bold mb-2">Commitar por Ano</h3>
+                  <p className="text-gray-400 text-sm">Preencha um ano inteiro de contribuições no GitHub</p>
                 </div>
                 <div
                   className="border border-gray-700 p-4 hover:border-gray-500 transition-colors cursor-pointer"
-                  onClick={() => setActiveSection("ide-setup")}
+                  onClick={() => setActiveSection("token-github")}
                 >
-                  <h3 className="text-white font-bold mb-2">IDE Integration</h3>
-                  <p className="text-gray-400 text-sm">Connect HEXA CLI with your favorite development environment</p>
+                  <h3 className="text-white font-bold mb-2">Configurar Token</h3>
+                  <p className="text-gray-400 text-sm">Autentique com o GitHub para push nos repositórios</p>
                 </div>
               </div>
             </div>
           </div>
         )
 
-      case "installation":
+      case "instalacao":
         return (
           <div className="space-y-8">
             <div>
-              <h1 className="text-4xl font-bold mb-4 text-white">Installation</h1>
-              <p className="text-xl text-gray-400 mb-8">Multiple ways to install HEXA CLI on your system.</p>
+              <h1 className="text-4xl font-bold mb-4 text-white">Instalação</h1>
+              <p className="text-xl text-gray-400 mb-8">Múltiplas formas de instalar o CommitForge no seu sistema.</p>
             </div>
 
             <div className="grid gap-6">
               <div className="bg-gray-950 border border-gray-800 p-6">
-                <h3 className="text-xl font-bold mb-3 text-white">NPM (Recommended)</h3>
-                <p className="text-gray-400 mb-4">Install globally for system-wide access:</p>
+                <h3 className="text-xl font-bold mb-3 text-white">Pip (Recomendado)</h3>
+                <p className="text-gray-400 mb-4">Instale globalmente para acesso em qualquer diretório:</p>
                 <div
                   className="bg-black border border-gray-700 p-4 font-mono text-sm cursor-pointer hover:border-gray-500 transition-colors flex items-center justify-between"
-                  onClick={() => copyToClipboard("npm install -g hexa-cli", "npm-install")}
+                  onClick={() => copyToClipboard("pip install commitforge", "pip-install")}
                 >
                   <div className="flex items-center gap-2">
                     <span className="text-gray-500">$</span>
-                    <span className="text-white">npm install -g hexa-cli</span>
+                    <span className="text-white">pip install commitforge</span>
                   </div>
-                  {copiedStates["npm-install"] ? (
+                  {copiedStates["pip-install"] ? (
                     <Check className="w-4 h-4 text-green-400" />
                   ) : (
                     <Copy className="w-4 h-4 text-gray-400 hover:text-white transition-colors" />
@@ -222,62 +252,72 @@ export default function DocsPage() {
               </div>
 
               <div className="bg-gray-950 border border-gray-800 p-6">
-                <h3 className="text-xl font-bold mb-3 text-white">Yarn</h3>
-                <p className="text-gray-400 mb-4">Alternative package manager installation:</p>
-                <div
-                  className="bg-black border border-gray-700 p-4 font-mono text-sm cursor-pointer hover:border-gray-500 transition-colors flex items-center justify-between"
-                  onClick={() => copyToClipboard("yarn global add hexa-cli", "yarn-install")}
-                >
-                  <div className="flex items-center gap-2">
-                    <span className="text-gray-500">$</span>
-                    <span className="text-white">yarn global add hexa-cli</span>
+                <h3 className="text-xl font-bold mb-3 text-white">Servidor Web (Interface Gráfica)</h3>
+                <p className="text-gray-400 mb-4">Inicie a interface web para usar via navegador:</p>
+                <div className="space-y-2">
+                  <div
+                    className="bg-black border border-gray-700 p-4 font-mono text-sm cursor-pointer hover:border-gray-500 transition-colors flex items-center justify-between"
+                    onClick={() => copyToClipboard("cd cli-commit && python app.py", "server-cmd")}
+                  >
+                    <div className="flex items-center gap-2">
+                      <span className="text-gray-500">$</span>
+                      <span className="text-white">cd cli-commit && python app.py</span>
+                    </div>
+                    {copiedStates["server-cmd"] ? (
+                      <Check className="w-4 h-4 text-green-400" />
+                    ) : (
+                      <Copy className="w-4 h-4 text-gray-400 hover:text-white transition-colors" />
+                    )}
                   </div>
-                  {copiedStates["yarn-install"] ? (
-                    <Check className="w-4 h-4 text-green-400" />
-                  ) : (
-                    <Copy className="w-4 h-4 text-gray-400 hover:text-white transition-colors" />
-                  )}
+                  <p className="text-gray-500 text-xs font-mono">→ Acesse: http://localhost:5000</p>
                 </div>
               </div>
 
               <div className="bg-gray-950 border border-gray-800 p-6">
-                <h3 className="text-xl font-bold mb-3 text-white">Direct Download</h3>
-                <p className="text-gray-400 mb-4">Download pre-built binaries for your platform:</p>
+                <h3 className="text-xl font-bold mb-3 text-white">Docker</h3>
+                <p className="text-gray-400 mb-4">Execute em contêiner isolado:</p>
                 <div className="space-y-3">
-                  <div className="flex items-center justify-between p-3 bg-black border border-gray-700 hover:border-gray-500 transition-colors">
-                    <div className="flex items-center gap-4">
-                      <span className="text-gray-500 w-20">macOS:</span>
-                      <code className="text-white">hexa-cli-darwin-x64</code>
+                  <div
+                    className="bg-black border border-gray-700 p-4 font-mono text-sm cursor-pointer hover:border-gray-500 transition-colors flex items-center justify-between"
+                    onClick={() => copyToClipboard("docker build -t commitforge .", "docker-build")}
+                  >
+                    <div className="flex items-center gap-2">
+                      <span className="text-gray-500">$</span>
+                      <span className="text-white">docker build -t commitforge .</span>
                     </div>
-                    <button className="text-gray-400 hover:text-white transition-colors text-sm">Download</button>
+                    {copiedStates["docker-build"] ? (
+                      <Check className="w-4 h-4 text-green-400" />
+                    ) : (
+                      <Copy className="w-4 h-4 text-gray-400 hover:text-white transition-colors" />
+                    )}
                   </div>
-                  <div className="flex items-center justify-between p-3 bg-black border border-gray-700 hover:border-gray-500 transition-colors">
-                    <div className="flex items-center gap-4">
-                      <span className="text-gray-500 w-20">Linux:</span>
-                      <code className="text-white">hexa-cli-linux-x64</code>
+                  <div
+                    className="bg-black border border-gray-700 p-4 font-mono text-sm cursor-pointer hover:border-gray-500 transition-colors flex items-center justify-between"
+                    onClick={() => copyToClipboard("docker run -p 5000:5000 commitforge", "docker-run")}
+                  >
+                    <div className="flex items-center gap-2">
+                      <span className="text-gray-500">$</span>
+                      <span className="text-white">docker run -p 5000:5000 commitforge</span>
                     </div>
-                    <button className="text-gray-400 hover:text-white transition-colors text-sm">Download</button>
-                  </div>
-                  <div className="flex items-center justify-between p-3 bg-black border border-gray-700 hover:border-gray-500 transition-colors">
-                    <div className="flex items-center gap-4">
-                      <span className="text-gray-500 w-20">Windows:</span>
-                      <code className="text-white">hexa-cli-win-x64.exe</code>
-                    </div>
-                    <button className="text-gray-400 hover:text-white transition-colors text-sm">Download</button>
+                    {copiedStates["docker-run"] ? (
+                      <Check className="w-4 h-4 text-green-400" />
+                    ) : (
+                      <Copy className="w-4 h-4 text-gray-400 hover:text-white transition-colors" />
+                    )}
                   </div>
                 </div>
               </div>
 
               <div className="bg-gray-950 border border-gray-800 p-6">
-                <h3 className="text-xl font-bold mb-3 text-white">Verification</h3>
-                <p className="text-gray-400 mb-4">Verify your installation:</p>
+                <h3 className="text-xl font-bold mb-3 text-white">Verificar Instalação</h3>
+                <p className="text-gray-400 mb-4">Confirme que a instalação foi bem-sucedida:</p>
                 <div
                   className="bg-black border border-gray-700 p-4 font-mono text-sm cursor-pointer hover:border-gray-500 transition-colors flex items-center justify-between"
-                  onClick={() => copyToClipboard("hexa-cli --version", "version-check")}
+                  onClick={() => copyToClipboard("commitforge --version", "version-check")}
                 >
                   <div className="flex items-center gap-2">
                     <span className="text-gray-500">$</span>
-                    <span className="text-white">hexa-cli --version</span>
+                    <span className="text-white">commitforge --version</span>
                   </div>
                   {copiedStates["version-check"] ? (
                     <Check className="w-4 h-4 text-green-400" />
@@ -290,27 +330,45 @@ export default function DocsPage() {
           </div>
         )
 
-      case "configuration":
+      case "configuracao":
         return (
           <div className="space-y-8">
             <div>
-              <h1 className="text-4xl font-bold mb-4 text-white">Configuration</h1>
-              <p className="text-xl text-gray-400 mb-8">Customize HEXA CLI to match your workflow and preferences.</p>
+              <h1 className="text-4xl font-bold mb-4 text-white">Configuração</h1>
+              <p className="text-xl text-gray-400 mb-8">Configure o CommitForge para o seu fluxo de trabalho.</p>
             </div>
 
             <div className="bg-gray-950 border border-gray-800 p-6">
-              <h2 className="text-2xl font-bold mb-4 text-white">Global Configuration</h2>
-              <p className="text-gray-400 mb-4">Set up your global preferences:</p>
+              <h2 className="text-2xl font-bold mb-4 text-white">Arquivo .env</h2>
+              <p className="text-gray-400 mb-4">
+                Crie um arquivo <code className="text-white bg-black px-2 py-1">.env</code> na raiz do projeto:
+              </p>
+              <div className="bg-black border border-gray-700 p-4 font-mono text-sm">
+                <pre className="text-gray-300">{`# Token do GitHub (obrigatório para push)
+GITHUB_TOKEN=ghp_xxxxxxxxxxxxxxxxx
+
+# Configurações do servidor
+SECRET_KEY=sua_chave_secreta
+UPLOAD_FOLDER=repos
+MAX_COMMITS=5000
+
+# Porta do servidor (padrão: 5000)
+PORT=5000`}</pre>
+              </div>
+            </div>
+
+            <div className="bg-gray-950 border border-gray-800 p-6">
+              <h2 className="text-2xl font-bold mb-4 text-white">Configurações Globais via CLI</h2>
               <div className="space-y-3">
                 <div
                   className="bg-black border border-gray-700 p-4 font-mono text-sm cursor-pointer hover:border-gray-500 transition-colors flex items-center justify-between"
-                  onClick={() => copyToClipboard("hexa-cli config set model gpt-5", "config-model")}
+                  onClick={() => copyToClipboard("commitforge config --token ghp_xxxx", "config-token")}
                 >
                   <div className="flex items-center gap-2">
                     <span className="text-gray-500">$</span>
-                    <span className="text-white">hexa-cli config set model gpt-5</span>
+                    <span className="text-white">commitforge config --token ghp_xxxx</span>
                   </div>
-                  {copiedStates["config-model"] ? (
+                  {copiedStates["config-token"] ? (
                     <Check className="w-4 h-4 text-green-400" />
                   ) : (
                     <Copy className="w-4 h-4 text-gray-400 hover:text-white transition-colors" />
@@ -318,13 +376,13 @@ export default function DocsPage() {
                 </div>
                 <div
                   className="bg-black border border-gray-700 p-4 font-mono text-sm cursor-pointer hover:border-gray-500 transition-colors flex items-center justify-between"
-                  onClick={() => copyToClipboard("hexa-cli config set auto-review true", "config-review")}
+                  onClick={() => copyToClipboard("commitforge config --usuario \"Seu Nome\" --email seu@email.com", "config-user")}
                 >
                   <div className="flex items-center gap-2">
                     <span className="text-gray-500">$</span>
-                    <span className="text-white">hexa-cli config set auto-review true</span>
+                    <span className="text-white">commitforge config --usuario "Seu Nome" --email seu@email.com</span>
                   </div>
-                  {copiedStates["config-review"] ? (
+                  {copiedStates["config-user"] ? (
                     <Check className="w-4 h-4 text-green-400" />
                   ) : (
                     <Copy className="w-4 h-4 text-gray-400 hover:text-white transition-colors" />
@@ -334,74 +392,46 @@ export default function DocsPage() {
             </div>
 
             <div className="bg-gray-950 border border-gray-800 p-6">
-              <h2 className="text-2xl font-bold mb-4 text-white">Project Configuration</h2>
-              <p className="text-gray-400 mb-4">
-                Create a <code className="text-white bg-black px-2 py-1">hexa.config.json</code> file in your project
-                root:
-              </p>
-              <div className="bg-black border border-gray-700 p-4 font-mono text-sm">
-                <pre className="text-gray-300">{`{
-  "model": "claude-4-sonnet",
-  "rules": [
-    "Use TypeScript for all new files",
-    "Follow React best practices",
-    "Add comprehensive error handling"
-  ],
-  "integrations": {
-    "ide": "vscode",
-    "ci": "github-actions"
-  },
-  "agents": {
-    "reviewer": {
-      "model": "claude-4",
-      "focus": ["security", "performance"]
-    }
-  }
-}`}</pre>
-              </div>
-            </div>
-
-            <div className="bg-gray-950 border border-gray-800 p-6">
-              <h2 className="text-2xl font-bold mb-4 text-white">Environment Variables</h2>
+              <h2 className="text-2xl font-bold mb-4 text-white">Variáveis de Ambiente</h2>
               <div className="space-y-4">
                 <div className="border-l-2 border-gray-700 pl-4">
-                  <code className="text-white">HEXA_API_KEY</code>
-                  <p className="text-gray-400 mt-1">Your HEXA CLI API key for premium features</p>
+                  <code className="text-white">GITHUB_TOKEN</code>
+                  <p className="text-gray-400 mt-1">Token de acesso pessoal do GitHub para autenticação</p>
                 </div>
                 <div className="border-l-2 border-gray-700 pl-4">
-                  <code className="text-white">HEXA_MODEL</code>
-                  <p className="text-gray-400 mt-1">Default AI model to use (overrides config)</p>
+                  <code className="text-white">COMMITFORGE_SERVER</code>
+                  <p className="text-gray-400 mt-1">URL do servidor CommitForge (padrão: http://localhost:5000)</p>
                 </div>
                 <div className="border-l-2 border-gray-700 pl-4">
-                  <code className="text-white">HEXA_DEBUG</code>
-                  <p className="text-gray-400 mt-1">Enable debug logging (true/false)</p>
+                  <code className="text-white">MAX_COMMITS</code>
+                  <p className="text-gray-400 mt-1">Número máximo de commits permitidos por processo (padrão: 5000)</p>
                 </div>
               </div>
             </div>
           </div>
         )
 
-      case "generate":
+      case "cmd-commit":
         return (
           <div className="space-y-8">
             <div>
-              <h1 className="text-4xl font-bold mb-4 text-white">hexa-cli generate</h1>
+              <h1 className="text-4xl font-bold mb-4 text-white">commitforge commit</h1>
               <p className="text-xl text-gray-400 mb-8">
-                Generate code, components, and entire features using AI models.
+                Cria commits com datas retroativas em um repositório Git.
               </p>
             </div>
 
             <div className="bg-gray-950 border border-gray-800 p-6">
-              <h3 className="text-xl font-bold mb-3 text-white">Basic Usage</h3>
+              <h3 className="text-xl font-bold mb-3 text-white">Uso Básico</h3>
               <div
                 className="bg-black border border-gray-700 p-4 font-mono text-sm cursor-pointer hover:border-gray-500 transition-colors flex items-center justify-between mb-4"
-                onClick={() => copyToClipboard("hexa-cli generate [prompt]", "basic-generate")}
+                onClick={() => copyToClipboard("commitforge commit --repo <URL> --year <ANO>", "basic-commit")}
               >
                 <div className="flex items-center gap-2">
                   <span className="text-gray-500">$</span>
-                  <span className="text-white">hexa-cli generate [prompt]</span>
+                  <span className="text-white">commitforge commit --repo &lt;URL&gt; --year &lt;ANO&gt;</span>
                 </div>
-                {copiedStates["basic-generate"] ? (
+                {copiedStates["basic-commit"] ? (
                   <Check className="w-4 h-4 text-green-400" />
                 ) : (
                   <Copy className="w-4 h-4 text-gray-400 hover:text-white transition-colors" />
@@ -410,48 +440,67 @@ export default function DocsPage() {
             </div>
 
             <div className="bg-gray-950 border border-gray-800 p-6">
-              <h3 className="text-xl font-bold mb-3 text-white">Options</h3>
+              <h3 className="text-xl font-bold mb-3 text-white">Opções</h3>
               <div className="space-y-4">
                 <div className="border-l-2 border-gray-700 pl-4">
-                  <code className="text-white">--model, -m</code>
-                  <p className="text-gray-400 mt-1">Specify AI model (gpt-5, claude-4, gemini-2.5)</p>
+                  <code className="text-white">--repo, -r</code>
+                  <p className="text-gray-400 mt-1">URL do repositório Git (HTTPS ou SSH) — obrigatório</p>
                 </div>
                 <div className="border-l-2 border-gray-700 pl-4">
-                  <code className="text-white">--context, -c</code>
-                  <p className="text-gray-400 mt-1">Include project context (full, minimal, none)</p>
+                  <code className="text-white">--year, -y</code>
+                  <p className="text-gray-400 mt-1">Ano para criar commits (ex: 2020) — cria para o ano inteiro</p>
                 </div>
                 <div className="border-l-2 border-gray-700 pl-4">
-                  <code className="text-white">--output, -o</code>
-                  <p className="text-gray-400 mt-1">Specify output file or directory</p>
+                  <code className="text-white">--start-date / --end-date</code>
+                  <p className="text-gray-400 mt-1">Intervalo de datas no formato YYYY-MM-DD</p>
                 </div>
                 <div className="border-l-2 border-gray-700 pl-4">
-                  <code className="text-white">--interactive, -i</code>
-                  <p className="text-gray-400 mt-1">Enable interactive mode for refinements</p>
+                  <code className="text-white">--dias, -d</code>
+                  <p className="text-gray-400 mt-1">Número de dias retroativos a partir de hoje</p>
+                </div>
+                <div className="border-l-2 border-gray-700 pl-4">
+                  <code className="text-white">--commits-por-dia</code>
+                  <p className="text-gray-400 mt-1">Número de commits por dia (padrão: 1, máximo: 10)</p>
+                </div>
+                <div className="border-l-2 border-gray-700 pl-4">
+                  <code className="text-white">--aleatorio</code>
+                  <p className="text-gray-400 mt-1">Usa horários aleatórios para cada commit (mais natural)</p>
+                </div>
+                <div className="border-l-2 border-gray-700 pl-4">
+                  <code className="text-white">--pular-fins-de-semana</code>
+                  <p className="text-gray-400 mt-1">Cria commits apenas em dias úteis (seg-sex)</p>
+                </div>
+                <div className="border-l-2 border-gray-700 pl-4">
+                  <code className="text-white">--token, -t</code>
+                  <p className="text-gray-400 mt-1">Token de acesso pessoal do GitHub</p>
+                </div>
+                <div className="border-l-2 border-gray-700 pl-4">
+                  <code className="text-white">--sem-push</code>
+                  <p className="text-gray-400 mt-1">Cria commits localmente sem enviar ao remoto</p>
+                </div>
+                <div className="border-l-2 border-gray-700 pl-4">
+                  <code className="text-white">--mensagem, -m</code>
+                  <p className="text-gray-400 mt-1">Template da mensagem de commit (use {"{date}"} como placeholder)</p>
                 </div>
               </div>
             </div>
 
             <div className="bg-gray-950 border border-gray-800 p-6">
-              <h3 className="text-xl font-bold mb-3 text-white">Examples</h3>
-              <div className="space-y-3">
+              <h3 className="text-xl font-bold mb-3 text-white">Exemplos</h3>
+              <div className="space-y-4">
                 <div>
-                  <p className="text-gray-400 mb-2">Generate a React component:</p>
+                  <p className="text-gray-400 mb-2">Preencher o ano 2020 inteiro:</p>
                   <div
                     className="bg-black border border-gray-700 p-4 font-mono text-sm cursor-pointer hover:border-gray-500 transition-colors flex items-center justify-between"
-                    onClick={() =>
-                      copyToClipboard(
-                        "hexa-cli generate 'Create a responsive navbar component with dark mode toggle'",
-                        "example-navbar",
-                      )
-                    }
+                    onClick={() => copyToClipboard("commitforge commit --repo https://github.com/user/repo.git --year 2020 --aleatorio", "ex-year")}
                   >
                     <div className="flex items-center gap-2">
                       <span className="text-gray-500">$</span>
                       <span className="text-white">
-                        hexa-cli generate "Create a responsive navbar component with dark mode toggle"
+                        commitforge commit --repo https://github.com/user/repo.git --year 2020 --aleatorio
                       </span>
                     </div>
-                    {copiedStates["example-navbar"] ? (
+                    {copiedStates["ex-year"] ? (
                       <Check className="w-4 h-4 text-green-400" />
                     ) : (
                       <Copy className="w-4 h-4 text-gray-400 hover:text-white transition-colors" />
@@ -459,23 +508,18 @@ export default function DocsPage() {
                   </div>
                 </div>
                 <div>
-                  <p className="text-gray-400 mb-2">Generate API endpoints:</p>
+                  <p className="text-gray-400 mb-2">Intervalo de datas específico:</p>
                   <div
                     className="bg-black border border-gray-700 p-4 font-mono text-sm cursor-pointer hover:border-gray-500 transition-colors flex items-center justify-between"
-                    onClick={() =>
-                      copyToClipboard(
-                        "hexa-cli generate --model claude-4 'Create REST API for user management with authentication'",
-                        "example-api",
-                      )
-                    }
+                    onClick={() => copyToClipboard("commitforge commit --repo URL --start-date 2018-06-01 --end-date 2022-12-31 --commits-por-dia 2", "ex-range")}
                   >
                     <div className="flex items-center gap-2">
                       <span className="text-gray-500">$</span>
                       <span className="text-white">
-                        hexa-cli generate --model claude-4 "Create REST API for user management with authentication"
+                        commitforge commit --repo URL --start-date 2018-06-01 --end-date 2022-12-31 --commits-por-dia 2
                       </span>
                     </div>
-                    {copiedStates["example-api"] ? (
+                    {copiedStates["ex-range"] ? (
                       <Check className="w-4 h-4 text-green-400" />
                     ) : (
                       <Copy className="w-4 h-4 text-gray-400 hover:text-white transition-colors" />
@@ -483,23 +527,18 @@ export default function DocsPage() {
                   </div>
                 </div>
                 <div>
-                  <p className="text-gray-400 mb-2">Interactive generation:</p>
+                  <p className="text-gray-400 mb-2">Somente dias úteis, sem push automático:</p>
                   <div
                     className="bg-black border border-gray-700 p-4 font-mono text-sm cursor-pointer hover:border-gray-500 transition-colors flex items-center justify-between"
-                    onClick={() =>
-                      copyToClipboard(
-                        "hexa-cli generate --interactive 'Build a dashboard with charts'",
-                        "example-interactive",
-                      )
-                    }
+                    onClick={() => copyToClipboard("commitforge commit --repo URL --year 2021 --pular-fins-de-semana --sem-push", "ex-weekday")}
                   >
                     <div className="flex items-center gap-2">
                       <span className="text-gray-500">$</span>
                       <span className="text-white">
-                        hexa-cli generate --interactive "Build a dashboard with charts"
+                        commitforge commit --repo URL --year 2021 --pular-fins-de-semana --sem-push
                       </span>
                     </div>
-                    {copiedStates["example-interactive"] ? (
+                    {copiedStates["ex-weekday"] ? (
                       <Check className="w-4 h-4 text-green-400" />
                     ) : (
                       <Copy className="w-4 h-4 text-gray-400 hover:text-white transition-colors" />
@@ -511,72 +550,75 @@ export default function DocsPage() {
           </div>
         )
 
-      case "model-selection":
+      case "modo-ano":
         return (
           <div className="space-y-8">
             <div>
-              <h1 className="text-4xl font-bold mb-4 text-white">Model Selection</h1>
-              <p className="text-xl text-gray-400 mb-8">Choose and configure AI models for different tasks.</p>
+              <h1 className="text-4xl font-bold mb-4 text-white">Modo: Por Ano</h1>
+              <p className="text-xl text-gray-400 mb-8">
+                Preencha um ano inteiro de contribuições no GitHub com o flag <code className="text-white">--year</code>.
+              </p>
             </div>
 
             <div className="bg-gray-950 border border-gray-800 p-6">
-              <h3 className="text-xl font-bold mb-3 text-white">Available Models</h3>
+              <h3 className="text-xl font-bold mb-3 text-white">Como Funciona</h3>
+              <p className="text-gray-400 mb-4">
+                O flag <code className="text-white bg-black px-2 py-1">--year</code> cria automaticamente commits do
+                dia 1 de janeiro até 31 de dezembro do ano especificado. O CommitForge distribui os commits uniformemente
+                ao longo do ano.
+              </p>
+              <div className="space-y-3">
+                <div
+                  className="bg-black border border-gray-700 p-4 font-mono text-sm cursor-pointer hover:border-gray-500 transition-colors flex items-center justify-between"
+                  onClick={() => copyToClipboard("commitforge commit --repo URL --year 2020", "year-basic")}
+                >
+                  <div className="flex items-center gap-2">
+                    <span className="text-gray-500">$</span>
+                    <span className="text-white">commitforge commit --repo URL --year 2020</span>
+                  </div>
+                  {copiedStates["year-basic"] ? (
+                    <Check className="w-4 h-4 text-green-400" />
+                  ) : (
+                    <Copy className="w-4 h-4 text-gray-400 hover:text-white transition-colors" />
+                  )}
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-gray-950 border border-gray-800 p-6">
+              <h3 className="text-xl font-bold mb-3 text-white">Anos Disponíveis</h3>
               <div className="space-y-4">
                 <div className="border border-gray-700 p-4 hover:border-gray-500 transition-colors">
                   <div className="flex items-center justify-between mb-2">
-                    <h4 className="text-white font-bold">GPT-5 (OpenAI)</h4>
-                    <span className="text-green-400 text-sm">● Active</span>
+                    <h4 className="text-white font-bold">Qualquer ano passado</h4>
+                    <span className="text-green-400 text-sm">● Suportado</span>
                   </div>
                   <p className="text-gray-400 text-sm mb-2">
-                    Latest OpenAI model with enhanced reasoning and code generation
+                    Funciona para qualquer ano anterior ao atual (ex: 2010, 2015, 2020)
                   </p>
                   <div className="flex gap-2 text-xs">
-                    <span className="bg-gray-800 text-gray-300 px-2 py-1">Code Generation</span>
-                    <span className="bg-gray-800 text-gray-300 px-2 py-1">Reasoning</span>
-                    <span className="bg-gray-800 text-gray-300 px-2 py-1">Fast</span>
-                  </div>
-                </div>
-                <div className="border border-gray-700 p-4 hover:border-gray-500 transition-colors">
-                  <div className="flex items-center justify-between mb-2">
-                    <h4 className="text-white font-bold">Claude-4 Sonnet (Anthropic)</h4>
-                    <span className="text-green-400 text-sm">● Active</span>
-                  </div>
-                  <p className="text-gray-400 text-sm mb-2">Excellent for code review and complex reasoning tasks</p>
-                  <div className="flex gap-2 text-xs">
-                    <span className="bg-gray-800 text-gray-300 px-2 py-1">Code Review</span>
-                    <span className="bg-gray-800 text-gray-300 px-2 py-1">Analysis</span>
-                    <span className="bg-gray-800 text-gray-300 px-2 py-1">Detailed</span>
-                  </div>
-                </div>
-                <div className="border border-gray-700 p-4 hover:border-gray-500 transition-colors">
-                  <div className="flex items-center justify-between mb-2">
-                    <h4 className="text-white font-bold">Gemini-2.5 Pro (Google)</h4>
-                    <span className="text-green-400 text-sm">● Active</span>
-                  </div>
-                  <p className="text-gray-400 text-sm mb-2">
-                    Great for multimodal tasks and large context understanding
-                  </p>
-                  <div className="flex gap-2 text-xs">
-                    <span className="bg-gray-800 text-gray-300 px-2 py-1">Multimodal</span>
-                    <span className="bg-gray-800 text-gray-300 px-2 py-1">Large Context</span>
-                    <span className="bg-gray-800 text-gray-300 px-2 py-1">Versatile</span>
+                    <span className="bg-gray-800 text-gray-300 px-2 py-1">2010</span>
+                    <span className="bg-gray-800 text-gray-300 px-2 py-1">2015</span>
+                    <span className="bg-gray-800 text-gray-300 px-2 py-1">2018</span>
+                    <span className="bg-gray-800 text-gray-300 px-2 py-1">2020</span>
+                    <span className="bg-gray-800 text-gray-300 px-2 py-1">2023</span>
                   </div>
                 </div>
               </div>
             </div>
 
             <div className="bg-gray-950 border border-gray-800 p-6">
-              <h3 className="text-xl font-bold mb-3 text-white">Model Commands</h3>
+              <h3 className="text-xl font-bold mb-3 text-white">Combinações com --year</h3>
               <div className="space-y-3">
                 <div
                   className="bg-black border border-gray-700 p-4 font-mono text-sm cursor-pointer hover:border-gray-500 transition-colors flex items-center justify-between"
-                  onClick={() => copyToClipboard("hexa-cli model list", "model-list")}
+                  onClick={() => copyToClipboard("commitforge commit --repo URL --year 2020 --aleatorio --commits-por-dia 3", "year-multi")}
                 >
                   <div className="flex items-center gap-2">
                     <span className="text-gray-500">$</span>
-                    <span className="text-white">hexa-cli model list</span>
+                    <span className="text-white">commitforge commit --repo URL --year 2020 --aleatorio --commits-por-dia 3</span>
                   </div>
-                  {copiedStates["model-list"] ? (
+                  {copiedStates["year-multi"] ? (
                     <Check className="w-4 h-4 text-green-400" />
                   ) : (
                     <Copy className="w-4 h-4 text-gray-400 hover:text-white transition-colors" />
@@ -584,27 +626,13 @@ export default function DocsPage() {
                 </div>
                 <div
                   className="bg-black border border-gray-700 p-4 font-mono text-sm cursor-pointer hover:border-gray-500 transition-colors flex items-center justify-between"
-                  onClick={() => copyToClipboard("hexa-cli model set gpt-5", "model-set")}
+                  onClick={() => copyToClipboard("commitforge commit --repo URL --year 2019 --pular-fins-de-semana", "year-weekday")}
                 >
                   <div className="flex items-center gap-2">
                     <span className="text-gray-500">$</span>
-                    <span className="text-white">hexa-cli model set gpt-5</span>
+                    <span className="text-white">commitforge commit --repo URL --year 2019 --pular-fins-de-semana</span>
                   </div>
-                  {copiedStates["model-set"] ? (
-                    <Check className="w-4 h-4 text-green-400" />
-                  ) : (
-                    <Copy className="w-4 h-4 text-gray-400 hover:text-white transition-colors" />
-                  )}
-                </div>
-                <div
-                  className="bg-black border border-gray-700 p-4 font-mono text-sm cursor-pointer hover:border-gray-500 transition-colors flex items-center justify-between"
-                  onClick={() => copyToClipboard("hexa-cli model status", "model-status")}
-                >
-                  <div className="flex items-center gap-2">
-                    <span className="text-gray-500">$</span>
-                    <span className="text-white">hexa-cli model status</span>
-                  </div>
-                  {copiedStates["model-status"] ? (
+                  {copiedStates["year-weekday"] ? (
                     <Check className="w-4 h-4 text-green-400" />
                   ) : (
                     <Copy className="w-4 h-4 text-gray-400 hover:text-white transition-colors" />
@@ -615,99 +643,148 @@ export default function DocsPage() {
           </div>
         )
 
-      case "ide-setup":
+      case "token-github":
         return (
           <div className="space-y-8">
             <div>
-              <h1 className="text-4xl font-bold mb-4 text-white">IDE Setup</h1>
-              <p className="text-xl text-gray-400 mb-8">Integrate HEXA CLI with your development environment.</p>
+              <h1 className="text-4xl font-bold mb-4 text-white">Token do GitHub</h1>
+              <p className="text-xl text-gray-400 mb-8">Configure sua autenticação para fazer push dos commits retroativos.</p>
             </div>
 
             <div className="grid gap-6">
               <div className="bg-gray-950 border border-gray-800 p-6">
-                <h3 className="text-xl font-bold mb-3 text-white">VS Code Integration</h3>
-                <p className="text-gray-400 mb-4">Install the HEXA CLI extension for VS Code:</p>
+                <h3 className="text-xl font-bold mb-3 text-white">Como Gerar um Token</h3>
+                <p className="text-gray-400 mb-4">Acesse as configurações do GitHub para criar um token de acesso pessoal:</p>
+                <div className="space-y-2 text-sm text-gray-400">
+                  <p>1. Vá para <code className="text-white bg-black px-2 py-1">github.com → Settings → Developer settings</code></p>
+                  <p>2. Clique em <code className="text-white bg-black px-2 py-1">Personal access tokens → Tokens (classic)</code></p>
+                  <p>3. Clique em <code className="text-white bg-black px-2 py-1">Generate new token</code></p>
+                  <p>4. Marque as permissões: <code className="text-white bg-black px-2 py-1">repo</code> (acesso completo)</p>
+                  <p>5. Copie o token gerado (começa com <code className="text-white bg-black px-2 py-1">ghp_</code>)</p>
+                </div>
+              </div>
+
+              <div className="bg-gray-950 border border-gray-800 p-6">
+                <h3 className="text-xl font-bold mb-3 text-white">Usar o Token</h3>
+                <p className="text-gray-400 mb-4">Passe o token diretamente no comando ou via variável de ambiente:</p>
                 <div className="space-y-3">
                   <div
                     className="bg-black border border-gray-700 p-4 font-mono text-sm cursor-pointer hover:border-gray-500 transition-colors flex items-center justify-between"
-                    onClick={() =>
-                      copyToClipboard("code --install-extension hexa-cli.vscode-extension", "vscode-install")
-                    }
+                    onClick={() => copyToClipboard("commitforge commit --repo URL --year 2020 --token ghp_xxxx", "token-inline")}
                   >
                     <div className="flex items-center gap-2">
                       <span className="text-gray-500">$</span>
-                      <span className="text-white">code --install-extension hexa-cli.vscode-extension</span>
+                      <span className="text-white">commitforge commit --repo URL --year 2020 --token ghp_xxxx</span>
                     </div>
-                    {copiedStates["vscode-install"] ? (
+                    {copiedStates["token-inline"] ? (
                       <Check className="w-4 h-4 text-green-400" />
                     ) : (
                       <Copy className="w-4 h-4 text-gray-400 hover:text-white transition-colors" />
                     )}
                   </div>
-                  <div className="text-sm text-gray-400">
-                    <p>Features:</p>
-                    <ul className="list-disc list-inside mt-2 space-y-1">
-                      <li>Inline code generation</li>
-                      <li>AI-powered code completion</li>
-                      <li>Integrated terminal commands</li>
-                      <li>Real-time code review</li>
-                    </ul>
+                  <div
+                    className="bg-black border border-gray-700 p-4 font-mono text-sm cursor-pointer hover:border-gray-500 transition-colors flex items-center justify-between"
+                    onClick={() => copyToClipboard("export GITHUB_TOKEN=ghp_xxxx && commitforge commit --repo URL --year 2020", "token-env")}
+                  >
+                    <div className="flex items-center gap-2">
+                      <span className="text-gray-500">$</span>
+                      <span className="text-white">export GITHUB_TOKEN=ghp_xxxx && commitforge commit --repo URL --year 2020</span>
+                    </div>
+                    {copiedStates["token-env"] ? (
+                      <Check className="w-4 h-4 text-green-400" />
+                    ) : (
+                      <Copy className="w-4 h-4 text-gray-400 hover:text-white transition-colors" />
+                    )}
                   </div>
                 </div>
               </div>
 
               <div className="bg-gray-950 border border-gray-800 p-6">
-                <h3 className="text-xl font-bold mb-3 text-white">JetBrains IDEs</h3>
-                <p className="text-gray-400 mb-4">Compatible with IntelliJ IDEA, WebStorm, PyCharm, and more:</p>
+                <h3 className="text-xl font-bold mb-3 text-white">Validar Token</h3>
+                <p className="text-gray-400 mb-4">Verifique se o token está correto antes de criar commits:</p>
                 <div
                   className="bg-black border border-gray-700 p-4 font-mono text-sm cursor-pointer hover:border-gray-500 transition-colors flex items-center justify-between"
-                  onClick={() => copyToClipboard("hexa-cli ide setup jetbrains", "jetbrains-setup")}
+                  onClick={() => copyToClipboard("commitforge validar-token --token ghp_xxxx", "validate-token")}
                 >
                   <div className="flex items-center gap-2">
                     <span className="text-gray-500">$</span>
-                    <span className="text-white">hexa-cli ide setup jetbrains</span>
+                    <span className="text-white">commitforge validar-token --token ghp_xxxx</span>
                   </div>
-                  {copiedStates["jetbrains-setup"] ? (
+                  {copiedStates["validate-token"] ? (
                     <Check className="w-4 h-4 text-green-400" />
                   ) : (
                     <Copy className="w-4 h-4 text-gray-400 hover:text-white transition-colors" />
                   )}
                 </div>
               </div>
+            </div>
+          </div>
+        )
 
-              <div className="bg-gray-950 border border-gray-800 p-6">
-                <h3 className="text-xl font-bold mb-3 text-white">Terminal Integration</h3>
-                <p className="text-gray-400 mb-4">Add shell completions and aliases:</p>
-                <div className="space-y-3">
-                  <div
-                    className="bg-black border border-gray-700 p-4 font-mono text-sm cursor-pointer hover:border-gray-500 transition-colors flex items-center justify-between"
-                    onClick={() => copyToClipboard("hexa-cli completion bash >> ~/.bashrc", "bash-completion")}
-                  >
-                    <div className="flex items-center gap-2">
-                      <span className="text-gray-500">$</span>
-                      <span className="text-white">hexa-cli completion bash {">"} ~/.bashrc</span>
-                    </div>
-                    {copiedStates["bash-completion"] ? (
-                      <Check className="w-4 h-4 text-green-400" />
-                    ) : (
-                      <Copy className="w-4 h-4 text-gray-400 hover:text-white transition-colors" />
-                    )}
+      case "api-rest":
+        return (
+          <div className="space-y-8">
+            <div>
+              <h1 className="text-4xl font-bold mb-4 text-white">API REST</h1>
+              <p className="text-xl text-gray-400 mb-8">
+                CommitForge expõe uma API REST completa quando executado como servidor.
+              </p>
+            </div>
+
+            <div className="bg-gray-950 border border-gray-800 p-6">
+              <h3 className="text-xl font-bold mb-3 text-white">Endpoints Disponíveis</h3>
+              <div className="space-y-4">
+                <div className="border border-gray-700 p-4">
+                  <div className="flex items-center gap-3 mb-2">
+                    <span className="bg-green-900 text-green-300 px-2 py-0.5 text-xs font-mono">POST</span>
+                    <code className="text-white">/api/start-job</code>
                   </div>
-                  <div
-                    className="bg-black border border-gray-700 p-4 font-mono text-sm cursor-pointer hover:border-gray-500 transition-colors flex items-center justify-between"
-                    onClick={() => copyToClipboard("hexa-cli completion zsh >> ~/.zshrc", "zsh-completion")}
-                  >
-                    <div className="flex items-center gap-2">
-                      <span className="text-gray-500">$</span>
-                      <span className="text-white">hexa-cli completion zsh {">"} ~/.zshrc</span>
-                    </div>
-                    {copiedStates["zsh-completion"] ? (
-                      <Check className="w-4 h-4 text-green-400" />
-                    ) : (
-                      <Copy className="w-4 h-4 text-gray-400 hover:text-white transition-colors" />
-                    )}
-                  </div>
+                  <p className="text-gray-400 text-sm">Inicia um novo processo de criação de commits</p>
                 </div>
+                <div className="border border-gray-700 p-4">
+                  <div className="flex items-center gap-3 mb-2">
+                    <span className="bg-blue-900 text-blue-300 px-2 py-0.5 text-xs font-mono">GET</span>
+                    <code className="text-white">/api/job-status/&lt;job_id&gt;</code>
+                  </div>
+                  <p className="text-gray-400 text-sm">Retorna o status e progresso de um processo</p>
+                </div>
+                <div className="border border-gray-700 p-4">
+                  <div className="flex items-center gap-3 mb-2">
+                    <span className="bg-green-900 text-green-300 px-2 py-0.5 text-xs font-mono">POST</span>
+                    <code className="text-white">/api/cancel-job/&lt;job_id&gt;</code>
+                  </div>
+                  <p className="text-gray-400 text-sm">Cancela um processo em andamento</p>
+                </div>
+                <div className="border border-gray-700 p-4">
+                  <div className="flex items-center gap-3 mb-2">
+                    <span className="bg-blue-900 text-blue-300 px-2 py-0.5 text-xs font-mono">GET</span>
+                    <code className="text-white">/api/jobs</code>
+                  </div>
+                  <p className="text-gray-400 text-sm">Lista todos os processos executados</p>
+                </div>
+                <div className="border border-gray-700 p-4">
+                  <div className="flex items-center gap-3 mb-2">
+                    <span className="bg-green-900 text-green-300 px-2 py-0.5 text-xs font-mono">POST</span>
+                    <code className="text-white">/api/validate-token</code>
+                  </div>
+                  <p className="text-gray-400 text-sm">Valida um token do GitHub</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-gray-950 border border-gray-800 p-6">
+              <h3 className="text-xl font-bold mb-3 text-white">Exemplo de Uso</h3>
+              <div className="bg-black border border-gray-700 p-4 font-mono text-sm">
+                <pre className="text-gray-300">{`curl -X POST http://localhost:5000/api/start-job \\
+  -H "Content-Type: application/json" \\
+  -d '{
+    "repo_url": "https://github.com/user/repo.git",
+    "year": 2020,
+    "github_token": "ghp_xxxx",
+    "commits_per_day": 2,
+    "random_times": true,
+    "skip_weekends": false
+  }'`}</pre>
               </div>
             </div>
           </div>
@@ -717,41 +794,41 @@ export default function DocsPage() {
         return (
           <div className="space-y-8">
             <div>
-              <h1 className="text-4xl font-bold mb-4 text-white">Documentation</h1>
-              <p className="text-xl text-gray-400 mb-8">Select a section from the sidebar to get started.</p>
+              <h1 className="text-4xl font-bold mb-4 text-white">Documentação CommitForge</h1>
+              <p className="text-xl text-gray-400 mb-8">Selecione uma seção no menu lateral para começar.</p>
             </div>
             <div className="grid md:grid-cols-2 gap-6">
               <div
                 className="bg-gray-950 border border-gray-800 p-6 hover:border-gray-600 transition-colors cursor-pointer"
-                onClick={() => setActiveSection("getting-started")}
+                onClick={() => setActiveSection("comecar")}
               >
                 <Rocket className="w-8 h-8 text-white mb-3" />
-                <h3 className="text-xl font-bold text-white mb-2">Getting Started</h3>
-                <p className="text-gray-400">Quick installation and setup guide</p>
+                <h3 className="text-xl font-bold text-white mb-2">Início Rápido</h3>
+                <p className="text-gray-400">Guia de instalação e primeiro uso</p>
               </div>
               <div
                 className="bg-gray-950 border border-gray-800 p-6 hover:border-gray-600 transition-colors cursor-pointer"
-                onClick={() => setActiveSection("commands")}
+                onClick={() => setActiveSection("cmd-commit")}
               >
                 <Terminal className="w-8 h-8 text-white mb-3" />
-                <h3 className="text-xl font-bold text-white mb-2">Commands</h3>
-                <p className="text-gray-400">Complete CLI command reference</p>
+                <h3 className="text-xl font-bold text-white mb-2">Comandos</h3>
+                <p className="text-gray-400">Referência completa de todos os comandos CLI</p>
               </div>
               <div
                 className="bg-gray-950 border border-gray-800 p-6 hover:border-gray-600 transition-colors cursor-pointer"
-                onClick={() => setActiveSection("models")}
+                onClick={() => setActiveSection("modo-ano")}
               >
                 <Zap className="w-8 h-8 text-white mb-3" />
-                <h3 className="text-xl font-bold text-white mb-2">AI Models</h3>
-                <p className="text-gray-400">Configure and use different AI models</p>
+                <h3 className="text-xl font-bold text-white mb-2">Modos de Data</h3>
+                <p className="text-gray-400">Por ano, intervalo ou quantidade de dias</p>
               </div>
               <div
                 className="bg-gray-950 border border-gray-800 p-6 hover:border-gray-600 transition-colors cursor-pointer"
-                onClick={() => setActiveSection("integrations")}
+                onClick={() => setActiveSection("token-github")}
               >
                 <Settings className="w-8 h-8 text-white mb-3" />
-                <h3 className="text-xl font-bold text-white mb-2">Integrations</h3>
-                <p className="text-gray-400">IDE setup and workflow integration</p>
+                <h3 className="text-xl font-bold text-white mb-2">Autenticação</h3>
+                <p className="text-gray-400">Configure tokens do GitHub para push</p>
               </div>
             </div>
           </div>
@@ -771,11 +848,11 @@ export default function DocsPage() {
                 <div className="w-3 h-3 bg-green-500"></div>
               </div>
               <div className="flex items-center gap-2">
-                <span className="text-white font-bold text-lg">HEXA</span>
-                <span className="text-gray-400 text-sm">CLI</span>
+                <span className="text-white font-bold text-lg">Commit</span>
+                <span className="text-gray-400 text-sm">Forge</span>
               </div>
             </a>
-            <div className="text-gray-500 text-sm">/ Documentation</div>
+            <div className="text-gray-500 text-sm">/ Documentação</div>
           </div>
 
           <button
@@ -796,7 +873,7 @@ export default function DocsPage() {
           <div className="p-6">
             <div className="flex items-center gap-3 mb-8">
               <Book className="w-6 h-6 text-white" />
-              <h2 className="text-xl font-bold text-white">Documentation</h2>
+              <h2 className="text-xl font-bold text-white">Documentação</h2>
             </div>
 
             <nav className="space-y-6">
