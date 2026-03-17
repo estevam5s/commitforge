@@ -17,7 +17,7 @@
 </p>
 
 <p>
-  <img src="https://img.shields.io/badge/version-3.0.0-22c55e?style=flat-square" />
+  <img src="https://img.shields.io/badge/version-1.0.0-22c55e?style=flat-square" />
   <img src="https://img.shields.io/badge/license-MIT-blue?style=flat-square" />
   <img src="https://img.shields.io/badge/plataformas-GitHub%20%7C%20GitLab%20%7C%20Bitbucket-orange?style=flat-square" />
   <img src="https://img.shields.io/badge/commits-até%205000%2Fjob-purple?style=flat-square" />

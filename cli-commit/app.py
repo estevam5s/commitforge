@@ -1006,6 +1006,129 @@ def preview_commits():
         return jsonify({'status': 'error', 'message': str(e)}), 400
 
 
+# ─── AVT — Autoridade de Variância Temporal ──────────────────────────────────
+
+_AVT_ALERTS = [
+    {'level': 'info',    'title': 'Vigilância Ativa',       'msg': 'A AVT está monitorando sua linha do tempo. Todas as ações são registradas.',                         'agent': 'Mobius M. Mobius', 'icon': '🕵️'},
+    {'level': 'warning', 'title': 'Variante Detectada',     'msg': 'Sua atividade foi flagrada como suspeita. Permaneça onde está. Por favor.',                           'agent': 'Hunter B-15',      'icon': '⚠️'},
+    {'level': 'info',    'title': 'Linha Sagrada OK',       'msg': 'Você ainda está em conformidade com a Linha do Tempo Sagrada. Isso pode mudar.',                      'agent': 'Ravonna Renslayer','icon': '🌿'},
+    {'level': 'info',    'title': 'He Who Remains',         'msg': 'Todos os caminhos levam a ele. Inclusive seus commits das 3 da manhã.',                               'agent': 'He Who Remains',   'icon': '👁️'},
+    {'level': 'warning', 'title': 'Aviso de Fragmentação', 'msg': 'Commits retroativos em excesso podem fragmentar a realidade. Ou o GitHub. Ambos.',                    'agent': 'Mobius M. Mobius', 'icon': '💥'},
+    {'level': 'info',    'title': 'Dossier Atualizado',    'msg': 'Adicionamos mais entradas ao seu arquivo na AVT. Temos um arquivo enorme agora.',                     'agent': 'Hunter X-05',      'icon': '📁'},
+    {'level': 'warning', 'title': 'Ramificação Detectada', 'msg': 'Cada branch que você cria é uma linha do tempo que podemos podar quando quisermos.',                  'agent': 'Ravonna Renslayer','icon': '🌿'},
+    {'level': 'info',    'title': 'TemPad Autorizado',     'msg': 'Seus commits viajaram no tempo com sucesso. Por favor, não repita isso.',                              'agent': 'Mobius M. Mobius', 'icon': '⏱️'},
+    {'level': 'danger',  'title': 'ALERTA CRÍTICO',        'msg': 'Você está reescrevendo o passado! Os Minutemen foram despachados para sua localização.',               'agent': 'Minutemen',        'icon': '🚨'},
+    {'level': 'info',    'title': 'Curiosidade TVA',       'msg': 'Sabia que 87% das variantes são capturadas na primeira semana? Você faz parte dos 13%.',               'agent': 'Hunter B-15',      'icon': '📊'},
+    {'level': 'warning', 'title': 'Padrão Suspeito',       'msg': 'Commits em anos que você mal lembra? A AVT chama isso de... comportamento suspeito.',                  'agent': 'Mobius M. Mobius', 'icon': '🔍'},
+    {'level': 'info',    'title': 'Protocolo Temporal',    'msg': 'Você não tem livre-arbítrio. Está seguindo o que sempre esteve escrito. Relaxe.',                     'agent': 'He Who Remains',   'icon': '📜'},
+    {'level': 'danger',  'title': 'EVENTO NEXUS',          'msg': 'Uma ramificação temporal significativa foi detectada. Equipe de poda despachada.',                    'agent': 'Minutemen',        'icon': '☢️'},
+    {'level': 'info',    'title': 'Reflexão da AVT',       'msg': 'Cada commit ecoa pelo Multiverso. CommitForge apoia uso responsável e honesto.',                      'agent': 'Ravonna Renslayer','icon': '🌌'},
+    {'level': 'warning', 'title': 'Sobrecarga Temporal',   'msg': '365 commits de uma vez? Loki fez pior, mas ainda assim. Use com moderação.',                          'agent': 'Hunter X-05',      'icon': '⚡'},
+    {'level': 'info',    'title': 'Registro Temporal',     'msg': 'CommitForge foi criado para documentar trabalho real. A AVT aprecia a honestidade.',                  'agent': 'Mobius M. Mobius', 'icon': '✅'},
+    {'level': 'warning', 'title': 'Memória Expurgada',     'msg': 'Lembra quando você não usava git? A AVT lembra. Temos tudo registrado.',                              'agent': 'Hunter B-15',      'icon': '🧠'},
+    {'level': 'info',    'title': 'TemPad Detectado',      'msg': 'Um novo TemPad foi ativado nesta sessão. Monitorando trajetória temporal.',                            'agent': 'Hunter X-05',      'icon': '📡'},
+    {'level': 'danger',  'title': 'Poda Iminente',         'msg': 'Sua branch criou uma divergência significativa. A AVT reserva o direito de podar.',                   'agent': 'Minutemen',        'icon': '✂️'},
+    {'level': 'info',    'title': 'Loki Aprova',           'msg': 'Até o Deus da Trapaça reconhece: documentar trabalho real é uma nobre missão.',                       'agent': 'He Who Remains',   'icon': '🐍'},
+]
+
+
+def _job_to_avt_entry(job: dict) -> dict:
+    """Normaliza um job para o formato da linha do tempo AVT."""
+    year = job.get('year')
+    start = job.get('start_date') or job.get('start_time')
+    if not year and start:
+        try:
+            if isinstance(start, str) and len(start) >= 4:
+                year = int(start[:4])
+            elif isinstance(start, (int, float)):
+                year = datetime.fromtimestamp(float(start)).year
+        except Exception:
+            pass
+    return {
+        'id':         job.get('id', ''),
+        'repo':       job.get('repo_url', 'Repositório Desconhecido'),
+        'year':       year or datetime.now().year,
+        'start_date': str(job.get('start_date', '')),
+        'end_date':   str(job.get('end_date', '')),
+        'commits':    job.get('commits_made', 0),
+        'status':     job.get('status', 'unknown'),
+        'branch':     job.get('branch') or 'main',
+        'mode':       job.get('commit_mode', 'arquivo'),
+        'created_at': job.get('start_time', ''),
+        'platform':   job.get('platform', 'github'),
+    }
+
+
+@app.route('/timeline')
+def avt_timeline():
+    """Página AVT — Linha do Tempo Temporal."""
+    return render_template('timeline.html')
+
+
+@app.route('/api/timeline')
+def get_avt_timeline():
+    """Dados consolidados para a visualização AVT."""
+    jobs = [_job_to_avt_entry(j) for j in active_jobs.values()]
+    seen_ids = {j['id'] for j in jobs}
+
+    persist_path = app.config['JOBS_PERSIST_FILE']
+    if os.path.exists(persist_path):
+        try:
+            with open(persist_path) as f:
+                history = json.load(f)
+            for h in history[:100]:
+                if h.get('id') not in seen_ids:
+                    jobs.append(_job_to_avt_entry(h))
+                    seen_ids.add(h.get('id'))
+        except Exception:
+            pass
+
+    current_year = datetime.now().year
+    nexus_events = [j for j in jobs if j['year'] > current_year]
+    branches     = [j for j in jobs if j['branch'] not in ('main', 'master', '')]
+    total_commits = sum(j['commits'] for j in jobs)
+    surveillance  = min(5, 1 + len(jobs) // 3 + total_commits // 100)
+
+    return jsonify({
+        'status':            'success',
+        'jobs':              jobs,
+        'nexus_events':      nexus_events,
+        'branches':          branches,
+        'surveillance_level': surveillance,
+        'total_commits':     total_commits,
+        'total_jobs':        len(jobs),
+        'current_year':      current_year,
+    })
+
+
+@app.route('/api/avt/alert')
+def get_avt_alert():
+    """Retorna um alerta aleatório da AVT."""
+    total_commits = sum(j.get('commits_made', 0) for j in active_jobs.values())
+    current_year  = datetime.now().year
+    alerts = list(_AVT_ALERTS)
+
+    if any(j.get('year', 0) and j.get('year', 0) > current_year for j in active_jobs.values()):
+        alerts.append({
+            'level': 'danger', 'icon': '🔮',
+            'title': 'NEXUS FUTURO DETECTADO',
+            'msg':   'Commits no FUTURO?! He Who Remains está visivelmente perturbado com sua linha do tempo.',
+            'agent': 'He Who Remains',
+        })
+    if total_commits > 500:
+        alerts.append({
+            'level': 'danger', 'icon': '💥',
+            'title': 'Sobrecarga Absoluta',
+            'msg':   f'{total_commits} commits manipulados. Você está literalmente quebrando a física temporal.',
+            'agent': 'Mobius M. Mobius',
+        })
+
+    chosen = dict(random.choice(alerts))
+    chosen['timestamp'] = datetime.now().isoformat()
+    chosen['alert_id']  = uuid.uuid4().hex[:8]
+    return jsonify({'status': 'success', 'alert': chosen})
+
+
 @app.errorhandler(404)
 def not_found(_):
     return jsonify({'status': 'error', 'message': 'Endpoint não encontrado'}), 404

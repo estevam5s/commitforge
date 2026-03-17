@@ -1,0 +1,1050 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AVT — Autoridade de Variância Temporal | CommitForge</title>
+  <link href="https://fonts.googleapis.com/css2?family=VT323&family=Share+Tech+Mono&family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg:      #06090f;
+      --panel:   rgba(8,14,24,0.96);
+      --border:  rgba(0,255,136,0.18);
+      --sacred:  #00ff88;
+      --amber:   #f5a623;
+      --nexus:   #ff4040;
+      --branch:  #ff8c00;
+      --text:    #b8d4b0;
+      --dim:     #3a6040;
+      --warn:    #ffcc00;
+      --info:    #4aabff;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Share Tech Mono', monospace;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* CRT scanlines */
+    body::after {
+      content: '';
+      position: fixed; inset: 0;
+      background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.04) 2px, rgba(0,0,0,0.04) 4px);
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    #bg-canvas {
+      position: fixed; inset: 0;
+      width: 100%; height: 100%;
+      z-index: 0;
+      pointer-events: none;
+      opacity: 0.35;
+    }
+
+    /* ─── Header ───────────────────────────────────────────── */
+    #avt-header {
+      position: fixed; top: 0; left: 0; right: 0; height: 62px;
+      background: rgba(3,7,14,0.98);
+      border-bottom: 2px solid var(--amber);
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 24px;
+      z-index: 100;
+      box-shadow: 0 0 40px rgba(245,166,35,0.15);
+    }
+
+    .hdr-logo { display: flex; align-items: center; gap: 12px; }
+    .avt-wordmark {
+      font-family: 'Orbitron', monospace;
+      font-size: 24px; font-weight: 900;
+      color: var(--amber); letter-spacing: 5px;
+      text-shadow: 0 0 24px rgba(245,166,35,0.7);
+    }
+    .avt-subtitle { font-size: 10px; color: var(--dim); letter-spacing: 2px; margin-top: 2px; }
+
+    .hdr-center { display: flex; align-items: center; gap: 20px; }
+
+    .surv-wrap { display: flex; align-items: center; gap: 8px; }
+    .surv-lbl { font-size: 10px; color: var(--dim); letter-spacing: 1px; text-transform: uppercase; }
+    .surv-bars { display: flex; gap: 3px; }
+    .surv-bar {
+      width: 9px; height: 20px;
+      background: rgba(255,255,255,0.06);
+      border-radius: 2px; transition: background 0.4s, box-shadow 0.4s;
+    }
+    .surv-bar.a1 { background: #00ff88; }
+    .surv-bar.a2 { background: #88ff00; }
+    .surv-bar.a3 { background: #ffcc00; }
+    .surv-bar.a4 { background: #ff8800; }
+    .surv-bar.a5 { background: #ff2200; box-shadow: 0 0 10px #ff2200; }
+    #surv-text { font-size: 11px; color: var(--dim); min-width: 64px; }
+
+    #avt-clock {
+      font-family: 'VT323', monospace;
+      font-size: 22px; color: var(--amber); letter-spacing: 2px;
+    }
+
+    .hdr-right { display: flex; align-items: center; gap: 12px; }
+    .btn-ghost {
+      padding: 6px 14px;
+      border: 1px solid var(--amber); background: transparent;
+      color: var(--amber); font-family: 'Share Tech Mono', monospace;
+      font-size: 11px; letter-spacing: 1px; cursor: pointer;
+      text-decoration: none; transition: all 0.2s;
+    }
+    .btn-ghost:hover { background: var(--amber); color: var(--bg); }
+    .btn-refresh {
+      padding: 5px 12px;
+      border: 1px solid var(--border); background: transparent;
+      color: var(--dim); font-family: 'Share Tech Mono', monospace;
+      font-size: 10px; cursor: pointer; transition: all 0.2s;
+    }
+    .btn-refresh:hover { border-color: var(--sacred); color: var(--sacred); }
+
+    /* ─── App layout ───────────────────────────────────────── */
+    #app { padding-top: 78px; min-height: 100vh; position: relative; z-index: 2; }
+
+    .sec-hdr {
+      padding: 18px 24px 10px;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .sec-title {
+      font-family: 'Orbitron', monospace;
+      font-size: 13px; color: var(--sacred);
+      letter-spacing: 3px; text-transform: uppercase;
+    }
+    .sec-meta { font-size: 11px; color: var(--dim); }
+
+    /* ─── Timeline ──────────────────────────────────────────── */
+    #tl-wrap { padding: 0 24px 16px; }
+    #tl-scroll {
+      overflow-x: auto; overflow-y: hidden;
+      background: rgba(0,8,4,0.5);
+      border: 1px solid var(--border); border-radius: 3px;
+      padding: 8px 0; cursor: grab; user-select: none;
+      position: relative;
+    }
+    #tl-scroll:active { cursor: grabbing; }
+    #tl-scroll::-webkit-scrollbar { height: 5px; }
+    #tl-scroll::-webkit-scrollbar-track { background: rgba(0,0,0,0.4); }
+    #tl-scroll::-webkit-scrollbar-thumb { background: var(--amber); border-radius: 3px; }
+
+    /* ─── Two-column panels ─────────────────────────────────── */
+    #panels {
+      display: grid; grid-template-columns: 1fr 1fr;
+      gap: 20px; padding: 0 24px 24px;
+    }
+    @media (max-width: 860px) { #panels { grid-template-columns: 1fr; } }
+
+    .panel {
+      background: var(--panel);
+      border: 1px solid var(--border); border-radius: 3px;
+      overflow: hidden;
+    }
+    .panel-hdr {
+      padding: 10px 14px;
+      background: rgba(0,255,136,0.04);
+      border-bottom: 1px solid var(--border);
+      font-family: 'Orbitron', monospace;
+      font-size: 11px; color: var(--sacred);
+      letter-spacing: 2px;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .panel-body {
+      padding: 10px; max-height: 300px; overflow-y: auto;
+    }
+    .panel-body::-webkit-scrollbar { width: 4px; }
+    .panel-body::-webkit-scrollbar-thumb { background: var(--border); }
+
+    /* ─── Case file cards ───────────────────────────────────── */
+    .case-card {
+      background: rgba(0,255,136,0.03);
+      border: 1px solid rgba(0,255,136,0.1);
+      border-radius: 2px; padding: 10px 12px;
+      margin-bottom: 7px; cursor: pointer;
+      transition: all 0.18s; position: relative;
+    }
+    .case-card:hover { background: rgba(0,255,136,0.07); border-color: rgba(0,255,136,0.3); }
+    .case-card.is-nexus { border-color: rgba(255,64,64,0.35); background: rgba(255,64,64,0.04); }
+    .case-card.is-nexus:hover { background: rgba(255,64,64,0.09); }
+    .case-id { font-size: 9px; color: var(--dim); margin-bottom: 3px; }
+    .case-repo { font-size: 12px; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-bottom: 4px; }
+    .case-meta { display: flex; gap: 10px; font-size: 10px; align-items: center; }
+    .case-yr { color: var(--amber); font-weight: bold; font-size: 13px; }
+    .case-commits { color: var(--sacred); }
+    .case-badge {
+      padding: 1px 5px; border-radius: 2px; font-size: 9px;
+      text-transform: uppercase; letter-spacing: 1px;
+    }
+    .badge-completed { background: rgba(0,255,136,0.15); color: var(--sacred); }
+    .badge-running   { background: rgba(245,166,35,0.15); color: var(--amber); }
+    .badge-failed    { background: rgba(255,64,64,0.15);  color: var(--nexus); }
+    .badge-unknown   { background: rgba(255,255,255,0.05); color: #666; }
+    .nexus-tag {
+      position: absolute; top: 6px; right: 6px;
+      background: var(--nexus); color: #fff;
+      font-size: 8px; padding: 1px 5px; font-family: 'Orbitron', monospace;
+      letter-spacing: 1px;
+      animation: blink 1.6s ease-in-out infinite;
+    }
+    @keyframes blink { 0%,100% { opacity:1; } 50% { opacity:0.4; } }
+
+    /* ─── Alert log ─────────────────────────────────────────── */
+    .alert-row {
+      padding: 9px 10px;
+      border-left: 3px solid;
+      margin-bottom: 7px;
+      background: rgba(0,0,0,0.25);
+      border-radius: 0 2px 2px 0;
+      animation: slidein .3s ease;
+    }
+    @keyframes slidein { from { transform: translateX(-8px); opacity:0; } to { transform: translateX(0); opacity:1; } }
+    .alert-row.info    { border-color: var(--info); }
+    .alert-row.warning { border-color: var(--warn); }
+    .alert-row.danger  { border-color: var(--nexus); }
+    .al-title { font-family: 'Orbitron', monospace; font-size: 10px; margin-bottom: 3px; }
+    .alert-row.info    .al-title { color: var(--info); }
+    .alert-row.warning .al-title { color: var(--warn); }
+    .alert-row.danger  .al-title { color: var(--nexus); }
+    .al-msg   { font-size: 11px; color: var(--text); line-height: 1.5; }
+    .al-foot  { display: flex; justify-content: space-between; margin-top: 4px; font-size: 9px; color: var(--dim); }
+
+    /* ─── Toasts ────────────────────────────────────────────── */
+    #toasts {
+      position: fixed; top: 76px; right: 18px;
+      z-index: 500; display: flex; flex-direction: column; gap: 8px; max-width: 320px;
+    }
+    .toast {
+      background: rgba(4,8,16,0.98);
+      border-radius: 3px; padding: 12px 14px;
+      animation: t-in .4s ease;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.7);
+      position: relative; overflow: hidden;
+    }
+    @keyframes t-in { from { transform: translateX(110%); opacity:0; } to { transform:translateX(0); opacity:1; } }
+    .toast.out { animation: t-out .35s ease forwards; }
+    @keyframes t-out { to { transform: translateX(110%); opacity:0; } }
+    .toast.info    { border-left: 4px solid var(--info); }
+    .toast.warning { border-left: 4px solid var(--warn); }
+    .toast.danger  { border-left: 4px solid var(--nexus); }
+    .toast-bar {
+      position: absolute; bottom: 0; left: 0; height: 2px;
+      animation: shrink 5s linear forwards;
+    }
+    .toast.info    .toast-bar { background: var(--info); }
+    .toast.warning .toast-bar { background: var(--warn); }
+    .toast.danger  .toast-bar { background: var(--nexus); }
+    @keyframes shrink { from { width:100%; } to { width:0; } }
+    .toast-hdr { display: flex; align-items: center; gap: 7px; margin-bottom: 5px; }
+    .toast-icon { font-size: 15px; }
+    .toast-ttl { font-family: 'Orbitron', monospace; font-size: 11px; }
+    .toast.info    .toast-ttl { color: var(--info); }
+    .toast.warning .toast-ttl { color: var(--warn); }
+    .toast.danger  .toast-ttl { color: var(--nexus); }
+    .toast-body  { font-size: 11px; color: var(--text); line-height: 1.5; }
+    .toast-agent { font-size: 9px; color: var(--dim); margin-top: 4px; }
+    .toast-x { position: absolute; top: 7px; right: 7px; background: none; border: none; color: var(--dim); cursor: pointer; font-size: 15px; }
+
+    /* ─── Agent popup ───────────────────────────────────────── */
+    #agent {
+      position: fixed; bottom: 80px; right: 24px;
+      width: 290px;
+      background: rgba(4,8,16,0.98);
+      border: 1px solid var(--amber); border-radius: 3px;
+      padding: 16px; z-index: 400;
+      display: none;
+      box-shadow: 0 0 36px rgba(245,166,35,0.25);
+      animation: ag-in .5s ease;
+    }
+    @keyframes ag-in { from { transform:translateY(16px) scale(.95); opacity:0; } to { transform:translateY(0) scale(1); opacity:1; } }
+    .ag-hdr { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+    .ag-avatar {
+      width: 40px; height: 40px;
+      background: rgba(245,166,35,0.12);
+      border: 1px solid var(--amber); border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 18px; flex-shrink: 0;
+    }
+    .ag-name  { font-family: 'Orbitron', monospace; font-size: 11px; color: var(--amber); }
+    .ag-rank  { font-size: 9px; color: var(--dim); margin-top: 2px; }
+    .ag-msg   {
+      font-size: 12px; color: var(--text); line-height: 1.6;
+      border-left: 2px solid var(--amber); padding-left: 10px; font-style: italic;
+    }
+    .ag-close { position: absolute; top: 9px; right: 9px; background: none; border: none; color: var(--dim); cursor: pointer; font-size: 18px; }
+
+    /* ─── Welcome modal ─────────────────────────────────────── */
+    #welcome-overlay {
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,0.93);
+      z-index: 1000;
+      display: flex; align-items: center; justify-content: center;
+    }
+    #welcome-card {
+      background: rgba(6,9,15,0.99);
+      border: 2px solid var(--amber);
+      max-width: 560px; width: 92%; padding: 40px 44px;
+      text-align: center;
+      box-shadow: 0 0 80px rgba(245,166,35,0.25);
+      animation: modal-in .6s ease;
+    }
+    @keyframes modal-in { from { transform:scale(.88) translateY(-20px); opacity:0; } to { transform:scale(1) translateY(0); opacity:1; } }
+    .wl-logo {
+      font-family: 'Orbitron', monospace;
+      font-size: 56px; font-weight: 900; color: var(--amber);
+      letter-spacing: 10px;
+      text-shadow: 0 0 50px rgba(245,166,35,0.8);
+      margin-bottom: 8px;
+    }
+    .wl-sub {
+      font-size: 12px; color: var(--dim); letter-spacing: 4px;
+      text-transform: uppercase; margin-bottom: 24px;
+    }
+    .wl-div { height: 1px; background: linear-gradient(to right, transparent, var(--amber), transparent); margin: 18px 0; }
+    .wl-body { font-size: 13px; line-height: 1.9; color: var(--text); text-align: left; margin-bottom: 16px; }
+    .wl-body em { color: var(--sacred); font-style: normal; }
+    .wl-body strong { color: var(--amber); }
+    .wl-note { font-size: 11px; color: var(--dim); font-style: italic; margin-top: 14px; }
+    .wl-btn {
+      display: block; width: 100%; margin-top: 24px;
+      padding: 14px;
+      background: var(--amber); color: var(--bg); border: none;
+      font-family: 'Orbitron', monospace; font-size: 13px; font-weight: 700;
+      letter-spacing: 3px; cursor: pointer; transition: all .2s;
+    }
+    .wl-btn:hover { background: #fff; box-shadow: 0 0 40px rgba(245,166,35,0.5); }
+
+    /* ─── Job detail modal ──────────────────────────────────── */
+    #jm-overlay {
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,0.88);
+      z-index: 800; display: none;
+      align-items: center; justify-content: center;
+    }
+    #jm-overlay.open { display: flex; }
+    #jm-card {
+      background: rgba(6,9,15,0.99);
+      border: 1px solid var(--amber);
+      max-width: 500px; width: 92%; padding: 26px;
+      position: relative; animation: modal-in .3s ease;
+    }
+    .jm-close { position: absolute; top: 10px; right: 10px; background: none; border: none; color: var(--dim); font-size: 22px; cursor: pointer; }
+    .jm-title {
+      font-family: 'Orbitron', monospace; font-size: 13px; color: var(--amber);
+      letter-spacing: 2px; margin-bottom: 16px;
+      padding-bottom: 12px; border-bottom: 1px solid rgba(245,166,35,0.2);
+    }
+    .jm-row {
+      display: flex; justify-content: space-between;
+      padding: 7px 0; border-bottom: 1px solid rgba(255,255,255,0.03);
+      font-size: 12px;
+    }
+    .jm-k { color: var(--dim); font-size: 10px; text-transform: uppercase; letter-spacing: 1px; }
+    .jm-v { color: var(--text); text-align: right; max-width: 62%; word-break: break-all; }
+    .jm-v.green { color: var(--sacred); }
+    .jm-v.amber { color: var(--amber); }
+    .jm-v.red   { color: var(--nexus); }
+    .nexus-warn {
+      background: rgba(255,64,64,0.08);
+      border: 1px solid rgba(255,64,64,0.3);
+      padding: 10px 14px; margin-bottom: 14px;
+      font-size: 11px; color: #ff7070; line-height: 1.6;
+    }
+
+    /* ─── Tooltip ───────────────────────────────────────────── */
+    #tt {
+      position: fixed;
+      background: rgba(4,8,16,0.98);
+      border: 1px solid var(--amber);
+      padding: 10px 14px; font-size: 11px;
+      font-family: 'Share Tech Mono', monospace;
+      color: var(--text); pointer-events: none;
+      z-index: 300; display: none;
+      max-width: 250px; line-height: 1.65;
+    }
+    .tt-title { font-family: 'Orbitron', monospace; font-size: 10px; color: var(--amber); margin-bottom: 5px; letter-spacing: 1px; }
+
+    /* ─── Stats bar ─────────────────────────────────────────── */
+    #stats-bar {
+      background: rgba(3,7,14,0.94);
+      border-top: 1px solid rgba(0,255,136,0.12);
+      padding: 9px 24px;
+      display: flex; gap: 28px; flex-wrap: wrap;
+      position: sticky; bottom: 0; z-index: 10;
+    }
+    .stat { display: flex; align-items: baseline; gap: 8px; }
+    .stat-lbl { font-size: 9px; color: var(--dim); text-transform: uppercase; letter-spacing: 1px; }
+    .stat-val { font-family: 'VT323', monospace; font-size: 22px; color: var(--sacred); }
+    .stat-val.amber { color: var(--amber); }
+    .stat-val.red   { color: var(--nexus); }
+
+    /* ─── Empty state ───────────────────────────────────────── */
+    .empty { text-align: center; padding: 36px 16px; color: var(--dim); }
+    .empty-icon { font-size: 36px; margin-bottom: 10px; }
+    .empty-ttl { font-family: 'Orbitron', monospace; font-size: 12px; color: var(--sacred); margin-bottom: 7px; }
+    .empty p { font-size: 11px; line-height: 1.7; }
+  </style>
+</head>
+<body>
+
+<canvas id="bg-canvas"></canvas>
+<div id="toasts"></div>
+<div id="tt"></div>
+
+<!-- ── Welcome Modal ───────────────────────────────────────────────────────── -->
+<div id="welcome-overlay">
+  <div id="welcome-card">
+    <div class="wl-logo">AVT</div>
+    <div class="wl-sub">Autoridade de Variância Temporal</div>
+    <div class="wl-div"></div>
+    <div class="wl-body">
+      <p>Bem-vindo(a), agente. Você entrou na <strong>AVT</strong>.</p>
+      <p>Esta instalação monitora <em>todas as ramificações temporais</em> criadas pelo CommitForge
+      na sua linha do tempo. Cada job executado, cada commit retroativo, cada branch criada —
+      <strong>tudo está registrado aqui</strong>.</p>
+      <br>
+      <p>A <em>Linha do Tempo Sagrada</em> deve ser preservada. Commits em excesso ou — <i>Glória
+      Prometida</i> — no <strong>futuro</strong>, geram um <em style="color:var(--nexus)">Evento Nexus</em>.</p>
+      <br>
+      <p>Não se preocupe. Isso era o que sempre estava destinado a acontecer.</p>
+    </div>
+    <p class="wl-note">— He Who Remains, provavelmente</p>
+    <button class="wl-btn" onclick="dismissWelcome()">ASSUMIR CONTROLE DA LINHA DO TEMPO</button>
+  </div>
+</div>
+
+<!-- ── Agent Popup ─────────────────────────────────────────────────────────── -->
+<div id="agent">
+  <button class="ag-close" onclick="closeAgent()">×</button>
+  <div class="ag-hdr">
+    <div class="ag-avatar" id="ag-avatar">👤</div>
+    <div>
+      <div class="ag-name" id="ag-name">AVT</div>
+      <div class="ag-rank" id="ag-rank">Agente</div>
+    </div>
+  </div>
+  <div class="ag-msg" id="ag-msg"></div>
+</div>
+
+<!-- ── Job Modal ───────────────────────────────────────────────────────────── -->
+<div id="jm-overlay" onclick="closeJobModal(event)">
+  <div id="jm-card">
+    <button class="jm-close" onclick="closeJobModal()">×</button>
+    <div class="jm-title">📁 ARQUIVO DE CASO — AVT</div>
+    <div id="jm-body"></div>
+  </div>
+</div>
+
+<!-- ── Header ──────────────────────────────────────────────────────────────── -->
+<header id="avt-header">
+  <div class="hdr-logo">
+    <svg width="38" height="38" viewBox="0 0 38 38" fill="none">
+      <circle cx="19" cy="19" r="18" stroke="#f5a623" stroke-width="1.4"/>
+      <path d="M19 4 L19 34 M4 19 L34 19" stroke="#f5a623" stroke-width="0.9"/>
+      <circle cx="19" cy="19" r="7" fill="none" stroke="#f5a623" stroke-width="1.4"/>
+      <circle cx="19" cy="19" r="2.5" fill="#f5a623"/>
+      <path d="M19 12 L19 4 M19 34 L19 26 M4 19 L12 19 M26 19 L34 19" stroke="#f5a623" stroke-width="0.6" stroke-dasharray="2 2"/>
+    </svg>
+    <div>
+      <div class="avt-wordmark">AVT</div>
+      <div class="avt-subtitle">AUTORIDADE DE VARIÂNCIA TEMPORAL</div>
+    </div>
+  </div>
+
+  <div class="hdr-center">
+    <div class="surv-wrap">
+      <span class="surv-lbl">Vigilância</span>
+      <div class="surv-bars">
+        <div class="surv-bar" data-i="1"></div>
+        <div class="surv-bar" data-i="2"></div>
+        <div class="surv-bar" data-i="3"></div>
+        <div class="surv-bar" data-i="4"></div>
+        <div class="surv-bar" data-i="5"></div>
+      </div>
+      <span id="surv-text">BAIXA</span>
+    </div>
+    <div id="avt-clock">--:--:--</div>
+  </div>
+
+  <div class="hdr-right">
+    <button class="btn-refresh" onclick="loadTimeline()">↺ ATUALIZAR</button>
+    <a href="/" class="btn-ghost">← MISSÃO</a>
+  </div>
+</header>
+
+<!-- ── Main App ─────────────────────────────────────────────────────────────── -->
+<main id="app">
+
+  <!-- Timeline section -->
+  <div class="sec-hdr">
+    <div class="sec-title">◈ LINHA DO TEMPO TEMPORAL</div>
+    <div class="sec-meta" id="tl-meta">Inicializando interface temporal…</div>
+  </div>
+  <div id="tl-wrap">
+    <div id="tl-scroll">
+      <div style="height:340px;display:flex;align-items:center;justify-content:center;color:var(--dim);font-size:14px;font-family:'VT323',monospace">
+        CARREGANDO DADOS TEMPORAIS…
+      </div>
+    </div>
+  </div>
+
+  <!-- Panels -->
+  <div id="panels">
+    <!-- Case files -->
+    <div class="panel">
+      <div class="panel-hdr">
+        <span>📁 ARQUIVOS DE CASO</span>
+        <span id="case-count" style="font-size:10px;color:var(--dim)">0 casos</span>
+      </div>
+      <div class="panel-body" id="case-list">
+        <div class="empty">
+          <div class="empty-icon">🗂️</div>
+          <div class="empty-ttl">Nenhum caso registrado</div>
+          <p>Inicie um job no CommitForge para criar ramificações temporais visíveis aqui.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Alert log -->
+    <div class="panel">
+      <div class="panel-hdr">
+        <span>⚠ LOG DE TRANSMISSÕES AVT</span>
+        <button class="btn-refresh" onclick="fetchAlert()">NOVA TRANSMISSÃO</button>
+      </div>
+      <div class="panel-body" id="alert-log">
+        <div style="color:var(--dim);font-size:11px;text-align:center;padding:24px">
+          Aguardando transmissão da AVT…
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Stats bar -->
+  <div id="stats-bar">
+    <div class="stat">
+      <span class="stat-lbl">Commits</span>
+      <span class="stat-val" id="st-commits">0</span>
+    </div>
+    <div class="stat">
+      <span class="stat-lbl">Casos</span>
+      <span class="stat-val amber" id="st-jobs">0</span>
+    </div>
+    <div class="stat">
+      <span class="stat-lbl">Ramificações</span>
+      <span class="stat-val" id="st-branches">0</span>
+    </div>
+    <div class="stat">
+      <span class="stat-lbl">Eventos Nexus</span>
+      <span class="stat-val red" id="st-nexus">0</span>
+    </div>
+    <div class="stat" style="margin-left:auto">
+      <span class="stat-lbl">Status</span>
+      <span class="stat-val" id="st-status" style="font-size:14px;font-family:'Share Tech Mono',monospace;color:var(--sacred)">● MONITORANDO</span>
+    </div>
+  </div>
+</main>
+
+<script>
+// ═══════════════════════════════════════════════════════════════
+// Canvas background — particles + flowing sacred timeline lines
+// ═══════════════════════════════════════════════════════════════
+(function () {
+  const cv = document.getElementById('bg-canvas');
+  const cx = cv.getContext('2d');
+  let W, H, pts = [], lines = [];
+
+  function resize() {
+    W = cv.width  = window.innerWidth;
+    H = cv.height = window.innerHeight;
+  }
+
+  function mkPt() {
+    return {
+      x: Math.random() * W,
+      y: Math.random() * H,
+      vx: (Math.random() - 0.5) * 0.25,
+      vy: (Math.random() - 0.4) * 0.3,
+      r:  Math.random() * 1.4 + 0.3,
+      a:  Math.random() * 0.5 + 0.1,
+      c:  Math.random() > 0.65 ? '#f5a623' : '#00ff88',
+    };
+  }
+
+  function mkLine(i) {
+    return { y: H * 0.1 + i * H * 0.18, spd: 0.3 + i * 0.08, x: Math.random() * W, a: 0.04 + i * 0.012 };
+  }
+
+  resize();
+  for (let i = 0; i < 100; i++) pts.push(mkPt());
+  for (let i = 0; i < 6;   i++) lines.push(mkLine(i));
+  window.addEventListener('resize', resize);
+
+  (function loop() {
+    cx.clearRect(0, 0, W, H);
+
+    for (const l of lines) {
+      l.x = (l.x + l.spd) % (W + 300);
+      cx.strokeStyle = `rgba(0,255,136,${l.a})`;
+      cx.lineWidth = 0.6;
+      cx.beginPath();
+      cx.moveTo(l.x - 280, l.y);
+      cx.lineTo(l.x, l.y);
+      cx.stroke();
+    }
+
+    for (const p of pts) {
+      p.x += p.vx; p.y += p.vy;
+      if (p.x < -5 || p.x > W + 5 || p.y < -5 || p.y > H + 5) Object.assign(p, mkPt());
+      cx.beginPath();
+      cx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+      cx.fillStyle = p.c + Math.round(p.a * 255).toString(16).padStart(2, '0');
+      cx.fill();
+    }
+
+    requestAnimationFrame(loop);
+  })();
+})();
+
+// ═══════════════════════════════════════════════════════════════
+// Clock
+// ═══════════════════════════════════════════════════════════════
+(function () {
+  const el = document.getElementById('avt-clock');
+  setInterval(() => {
+    el.textContent = new Date().toLocaleTimeString('pt-BR', { hour12: false }) + ' TVA';
+  }, 1000);
+})();
+
+// ═══════════════════════════════════════════════════════════════
+// Welcome modal
+// ═══════════════════════════════════════════════════════════════
+function dismissWelcome() {
+  const el = document.getElementById('welcome-overlay');
+  el.style.transition = 'opacity .4s';
+  el.style.opacity = '0';
+  setTimeout(() => el.remove(), 420);
+  setTimeout(fetchAlert, 1400);
+  setTimeout(() => fetchAlert(), 4000);
+}
+
+// ═══════════════════════════════════════════════════════════════
+// Surveillance meter
+// ═══════════════════════════════════════════════════════════════
+const SURV_NAMES = ['', 'BAIXA', 'MODERADA', 'ELEVADA', 'CRÍTICA', 'MÁXIMA'];
+
+function setSurveillance(lvl) {
+  document.querySelectorAll('.surv-bar').forEach((b, i) => {
+    b.className = 'surv-bar' + (i < lvl ? ` a${i + 1}` : '');
+  });
+  const txt = document.getElementById('surv-text');
+  txt.textContent = SURV_NAMES[lvl] || 'BAIXA';
+  txt.style.color = lvl >= 4 ? 'var(--nexus)' : lvl >= 3 ? 'var(--warn)' : 'var(--dim)';
+}
+
+// ═══════════════════════════════════════════════════════════════
+// SVG helpers
+// ═══════════════════════════════════════════════════════════════
+function svgEl(tag, attrs) {
+  const e = document.createElementNS('http://www.w3.org/2000/svg', tag);
+  if (attrs) Object.entries(attrs).forEach(([k, v]) => e.setAttribute(k, v));
+  return e;
+}
+function svgTxt(parent, x, y, txt, fill, size = '14px', anchor = 'middle', family = 'Share Tech Mono') {
+  const t = svgEl('text', { x, y, fill, 'font-size': size, 'text-anchor': anchor, 'font-family': family });
+  t.textContent = txt;
+  parent.appendChild(t);
+  return t;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// Timeline renderer
+// ═══════════════════════════════════════════════════════════════
+function renderTimeline(data) {
+  const YW      = 160;   // pixels per year
+  const H       = 340;
+  const TLY     = 210;   // Sacred Timeline Y
+  const cYear   = data.current_year;
+  const jobs    = data.jobs || [];
+
+  // Year range
+  let yMin = cYear - 5, yMax = cYear + 3;
+  for (const j of jobs) {
+    if (j.year && j.year < yMin) yMin = Math.max(1990, j.year - 1);
+    if (j.year && j.year > yMax) yMax = Math.min(2060, j.year + 1);
+  }
+  const years = Array.from({ length: yMax - yMin + 1 }, (_, i) => yMin + i);
+  const totalW = years.length * YW;
+  const xOf    = y => (y - yMin) * YW + YW / 2;
+  const curX   = xOf(cYear);
+
+  // Root SVG
+  const svg = svgEl('svg', { width: totalW, height: H, viewBox: `0 0 ${totalW} ${H}`, id: 'tl-svg' });
+
+  // ── Defs (glow filters) ──
+  const defs = svgEl('defs');
+  const makeFilter = (id, color, dev) => {
+    const f = svgEl('filter', { id, x: '-30%', y: '-200%', width: '160%', height: '600%' });
+    f.appendChild(svgEl('feDropShadow', { dx: 0, dy: 0, stdDeviation: dev, 'flood-color': color, 'flood-opacity': '0.85' }));
+    defs.appendChild(f);
+  };
+  makeFilter('glow-sacred', '#00ff88', 4);
+  makeFilter('glow-nexus',  '#ff4040', 6);
+  makeFilter('glow-branch', '#ff8c00', 3);
+  makeFilter('glow-amber',  '#f5a623', 3);
+  svg.appendChild(defs);
+
+  // ── Background ──
+  svg.appendChild(svgEl('rect', { width: totalW, height: H, fill: '#040810' }));
+
+  // Future zone
+  const futX = curX + YW * 0.5;
+  svg.appendChild(svgEl('rect', { x: futX, y: 0, width: totalW - futX, height: H, fill: 'rgba(255,40,40,0.055)' }));
+  if (totalW - futX > 100) {
+    svgTxt(svg, futX + (totalW - futX) / 2, 22, '⚠  ZONA PROIBIDA', '#ff4040', '13px', 'middle', 'Orbitron');
+  }
+
+  // ── Year columns + ticks ──
+  for (let i = 0; i < years.length; i++) {
+    const yr = years[i], cx2 = i * YW;
+    const isFuture = yr > cYear;
+    if (i % 2 === 0)
+      svg.appendChild(svgEl('rect', { x: cx2, y: 0, width: YW, height: H, fill: 'rgba(255,255,255,0.014)' }));
+    svg.appendChild(svgEl('line', { x1: cx2, y1: 0, x2: cx2, y2: H, stroke: 'rgba(0,255,136,0.05)', 'stroke-width': 1 }));
+    svg.appendChild(svgEl('line', { x1: cx2 + YW / 2, y1: TLY - 10, x2: cx2 + YW / 2, y2: TLY + 10, stroke: isFuture ? '#4a1010' : '#1a5a3a', 'stroke-width': 1 }));
+    svgTxt(svg, cx2 + YW / 2, H - 12, yr.toString(), isFuture ? '#7a3030' : '#2a5a3a', '20px', 'middle', 'VT323');
+  }
+
+  // ── Sacred Timeline ──
+  svg.appendChild(svgEl('line', { x1: 0, y1: TLY, x2: totalW, y2: TLY, stroke: 'rgba(0,255,136,0.1)', 'stroke-width': 14 }));
+  svg.appendChild(svgEl('line', { x1: 0, y1: TLY, x2: totalW, y2: TLY, stroke: '#00ff88', 'stroke-width': 2.5, filter: 'url(#glow-sacred)' }));
+
+  // ── TVA HQ marker ──
+  svg.appendChild(svgEl('line', { x1: curX, y1: 36, x2: curX, y2: H - 36, stroke: '#f5a623', 'stroke-width': 1.5, 'stroke-dasharray': '5 3' }));
+  svg.appendChild(svgEl('rect', { x: curX - 34, y: 37, width: 68, height: 19, fill: 'rgba(245,166,35,0.12)', stroke: 'rgba(245,166,35,0.45)', 'stroke-width': 0.6 }));
+  svgTxt(svg, curX, 51, 'TVA HQ', '#f5a623', '11px', 'middle', 'Orbitron');
+
+  // ── Group jobs by year ──
+  const byYear = {};
+  for (const j of jobs) {
+    const y = j.year;
+    if (!byYear[y]) byYear[y] = { main: [], branch: [], nexus: [] };
+    if (y > cYear)                                        byYear[y].nexus.push(j);
+    else if (j.branch === 'main' || j.branch === 'master') byYear[y].main.push(j);
+    else                                                   byYear[y].branch.push(j);
+  }
+
+  const statusColor = s => s === 'completed' ? '#00ff88' : s === 'running' ? '#f5a623' : s === 'failed' ? '#ff4040' : '#4a7a5a';
+
+  function attachInteraction(el, job) {
+    el.style.cursor = 'pointer';
+    el.addEventListener('mouseenter', e => showTT(e, job));
+    el.addEventListener('mouseleave', hideTT);
+    el.addEventListener('click', () => openJobModal(job));
+  }
+
+  // ── Draw per year ──
+  for (const [yrS, groups] of Object.entries(byYear)) {
+    const yr = parseInt(yrS);
+    const cx2 = xOf(yr);
+
+    // Main branch jobs
+    groups.main.forEach((job, i) => {
+      const cy = TLY - 38 - i * 30;
+      const r  = Math.max(10, Math.min(24, 8 + job.commits / 35));
+      const col = statusColor(job.status);
+
+      svg.appendChild(svgEl('line', { x1: cx2, y1: TLY - 3, x2: cx2, y2: cy + r, stroke: 'rgba(0,255,136,0.2)', 'stroke-width': 1 }));
+      svg.appendChild(svgEl('circle', { cx: cx2, cy, r: r + 6, fill: col + '18' }));
+
+      const circle = svgEl('circle', { cx: cx2, cy, r, fill: col + '30', stroke: col, 'stroke-width': 1.5, filter: 'url(#glow-sacred)' });
+      attachInteraction(circle, job);
+      svg.appendChild(circle);
+
+      const lbl = svgEl('text', { x: cx2, y: cy + 4, fill: col, 'font-size': '11px', 'text-anchor': 'middle', 'font-family': 'VT323', style: 'pointer-events:none' });
+      lbl.textContent = job.commits > 0 ? job.commits : '·';
+      svg.appendChild(lbl);
+    });
+
+    // Branch jobs — arcs branching off the Sacred Timeline
+    groups.branch.forEach((job, i) => {
+      const flip   = i % 2 === 0 ? 1 : -1;
+      const spread = (i + 1) * 55;
+      const bx = cx2 + spread * flip * 0.7;
+      const by = TLY - 90 - i * 32;
+      const col = '#ff8c00';
+
+      const d = `M ${cx2} ${TLY} C ${cx2} ${TLY - 55} ${bx} ${TLY - 55} ${bx} ${by}`;
+      svg.appendChild(svgEl('path', { d, fill: 'none', stroke: col + '70', 'stroke-width': 1.5, filter: 'url(#glow-branch)' }));
+
+      const bn = svgEl('circle', { cx: bx, cy: by, r: 9, fill: col + '28', stroke: col, 'stroke-width': 1.5 });
+      attachInteraction(bn, job);
+      svg.appendChild(bn);
+
+      const shortBranch = job.branch.length > 13 ? job.branch.slice(0, 13) + '…' : job.branch;
+      svgTxt(svg, bx + (flip > 0 ? 13 : -13), by + 4, shortBranch, col, '10px', flip > 0 ? 'start' : 'end');
+
+      const count = svgEl('text', { x: bx, y: by + 4, fill: col, 'font-size': '10px', 'text-anchor': 'middle', 'font-family': 'VT323', style: 'pointer-events:none' });
+      count.textContent = job.commits > 0 ? job.commits : '·';
+      svg.appendChild(count);
+    });
+
+    // Nexus events — pulsing diamonds above the future zone
+    groups.nexus.forEach((job, i) => {
+      const cy = TLY - 65 - i * 42;
+      const sz = 15;
+
+      svg.appendChild(svgEl('line', { x1: cx2, y1: TLY - 3, x2: cx2, y2: cy + sz + 2, stroke: 'rgba(255,64,64,0.35)', 'stroke-width': 1, 'stroke-dasharray': '3 3' }));
+
+      const pts = `${cx2},${cy - sz} ${cx2 + sz},${cy} ${cx2},${cy + sz} ${cx2 - sz},${cy}`;
+      const diamond = svgEl('polygon', { points: pts, fill: '#ff404028', stroke: '#ff4040', 'stroke-width': 1.5, filter: 'url(#glow-nexus)' });
+      attachInteraction(diamond, job);
+      svg.appendChild(diamond);
+
+      svgTxt(svg, cx2, cy - sz - 7, 'NEXUS', '#ff4040', '9px', 'middle', 'Orbitron');
+
+      // Ripple pulse animation
+      const ripple = svgEl('circle', { cx: cx2, cy, r: sz, fill: 'none', stroke: '#ff4040', 'stroke-width': 0.8, opacity: 0 });
+      const aR = svgEl('animate', { attributeName: 'r', from: sz, to: sz + 22, dur: '2.2s', repeatCount: 'indefinite' });
+      const aO = svgEl('animate', { attributeName: 'opacity', from: '0.7', to: '0', dur: '2.2s', repeatCount: 'indefinite' });
+      ripple.appendChild(aR); ripple.appendChild(aO);
+      svg.appendChild(ripple);
+
+      const lbl2 = svgEl('text', { x: cx2, y: cy + 5, fill: '#ff6060', 'font-size': '10px', 'text-anchor': 'middle', 'font-family': 'VT323', style: 'pointer-events:none' });
+      lbl2.textContent = job.commits > 0 ? job.commits : '·';
+      svg.appendChild(lbl2);
+    });
+  }
+
+  return svg;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// Tooltip
+// ═══════════════════════════════════════════════════════════════
+const ttEl = document.getElementById('tt');
+function showTT(e, job) {
+  const isNexus = job.year > new Date().getFullYear();
+  const stMap = { completed: '✓ Concluído', running: '⟳ Em execução', failed: '✗ Falhou' };
+  const shortRepo = job.repo.replace('https://github.com/', '').replace('https://', '');
+  ttEl.innerHTML = `
+    <div class="tt-title">${isNexus ? '☢ EVENTO NEXUS' : '◈ PONTO TEMPORAL'}</div>
+    <div><b style="color:var(--amber)">${job.year}</b> — ${job.branch}</div>
+    <div style="color:var(--dim);font-size:10px;margin:2px 0">${shortRepo}</div>
+    <div style="color:var(--sacred)">${job.commits} commits · ${job.mode}</div>
+    <div style="font-size:10px;margin-top:3px">${stMap[job.status] || job.status}</div>`;
+  ttEl.style.display = 'block';
+  posTT(e);
+}
+function hideTT() { ttEl.style.display = 'none'; }
+document.addEventListener('mousemove', e => { if (ttEl.style.display === 'block') posTT(e); });
+function posTT(e) {
+  let x = e.clientX + 14, y = e.clientY + 12;
+  if (x + 260 > window.innerWidth)  x = e.clientX - 270;
+  if (y + 130 > window.innerHeight) y = e.clientY - 140;
+  ttEl.style.left = x + 'px'; ttEl.style.top = y + 'px';
+}
+
+// ═══════════════════════════════════════════════════════════════
+// Job Modal
+// ═══════════════════════════════════════════════════════════════
+function openJobModal(job) {
+  const isNexus = job.year > new Date().getFullYear();
+  const stCol   = { completed: 'green', running: 'amber', failed: 'red' };
+  const shortRepo = job.repo.replace('https://github.com/', '').replace('https://', '');
+  const rows = [
+    ['ID do Caso',      job.id ? job.id.slice(-10) : 'N/A',          ''],
+    ['Repositório',     shortRepo,                                    ''],
+    ['Ano Temporal',    job.year,                                     isNexus ? 'red' : 'amber'],
+    ['Branch',          job.branch,                                   isNexus ? 'red' : ''],
+    ['Commits Criados', job.commits + ' commits',                     'green'],
+    ['Modo',            job.mode === 'projeto' ? 'Projeto (arquivos reais)' : 'Arquivo (log único)', ''],
+    ['Status',          job.status,                                   stCol[job.status] || ''],
+    ['Plataforma',      job.platform || 'github',                     ''],
+  ];
+  document.getElementById('jm-body').innerHTML =
+    (isNexus ? `<div class="nexus-warn">☢ <strong>EVENTO NEXUS</strong> — Este job criou commits em ${job.year},
+      um ano que ainda não ocorreu. A AVT monitorará esta anomalia temporal indefinidamente.</div>` : '') +
+    rows.map(([k, v, c]) => `<div class="jm-row"><span class="jm-k">${k}</span><span class="jm-v ${c}">${v}</span></div>`).join('');
+  document.getElementById('jm-overlay').classList.add('open');
+}
+function closeJobModal(e) {
+  if (!e || e.target === document.getElementById('jm-overlay') || e.currentTarget?.tagName === 'BUTTON')
+    document.getElementById('jm-overlay').classList.remove('open');
+}
+
+// ═══════════════════════════════════════════════════════════════
+// Case files
+// ═══════════════════════════════════════════════════════════════
+function renderCaseFiles(jobs) {
+  const list  = document.getElementById('case-list');
+  const count = document.getElementById('case-count');
+  count.textContent = `${jobs.length} caso${jobs.length !== 1 ? 's' : ''}`;
+
+  if (!jobs.length) {
+    list.innerHTML = `<div class="empty"><div class="empty-icon">🗂️</div><div class="empty-ttl">Nenhum caso registrado</div><p>Inicie um job no CommitForge para criar ramificações temporais visíveis aqui.</p></div>`;
+    return;
+  }
+
+  const cy = new Date().getFullYear();
+  list.innerHTML = jobs.map(j => {
+    const isNexus   = j.year > cy;
+    const shortRepo = j.repo.replace('https://github.com/', '').replace('https://', '');
+    const badge     = `badge-${['completed','running','failed'].includes(j.status) ? j.status : 'unknown'}`;
+    const enc       = JSON.stringify(j).replace(/"/g, '&quot;');
+    return `
+      <div class="case-card${isNexus ? ' is-nexus' : ''}" onclick="openJobModal(${enc})">
+        ${isNexus ? '<div class="nexus-tag">NEXUS</div>' : ''}
+        <div class="case-id">CASO #${(j.id || '').slice(-8) || 'N/A'}</div>
+        <div class="case-repo" title="${j.repo}">${shortRepo}</div>
+        <div class="case-meta">
+          <span class="case-yr">${j.year}</span>
+          <span class="case-commits">${j.commits}⬡</span>
+          <span class="case-badge ${badge}">${j.status}</span>
+          <span style="color:var(--dim);font-size:9px">${j.branch}</span>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+// ═══════════════════════════════════════════════════════════════
+// Toast notifications
+// ═══════════════════════════════════════════════════════════════
+function showToast(alert) {
+  const c = document.getElementById('toasts');
+  const d = document.createElement('div');
+  d.className = `toast ${alert.level || 'info'}`;
+  d.innerHTML = `
+    <button class="toast-x" onclick="this.parentElement.remove()">×</button>
+    <div class="toast-hdr"><span class="toast-icon">${alert.icon || '⚡'}</span><span class="toast-ttl">${alert.title}</span></div>
+    <div class="toast-body">${alert.msg}</div>
+    <div class="toast-agent">— ${alert.agent}</div>
+    <div class="toast-bar"></div>`;
+  c.appendChild(d);
+  setTimeout(() => { d.classList.add('out'); setTimeout(() => d.remove(), 360); }, 6000);
+}
+
+// ═══════════════════════════════════════════════════════════════
+// Alert log
+// ═══════════════════════════════════════════════════════════════
+const alertLog = document.getElementById('alert-log');
+function addAlert(alert) {
+  if (alertLog.querySelector('[data-empty]')) alertLog.innerHTML = '';
+  const time = new Date(alert.timestamp || Date.now()).toLocaleTimeString('pt-BR', { hour12: false });
+  const row  = document.createElement('div');
+  row.className = `alert-row ${alert.level || 'info'}`;
+  row.innerHTML = `
+    <div class="al-title">${alert.icon || ''} ${alert.title}</div>
+    <div class="al-msg">${alert.msg}</div>
+    <div class="al-foot"><span>— ${alert.agent}</span><span>${time}</span></div>`;
+  alertLog.insertBefore(row, alertLog.firstChild);
+  while (alertLog.children.length > 18) alertLog.removeChild(alertLog.lastChild);
+}
+
+// ═══════════════════════════════════════════════════════════════
+// Agent popup
+// ═══════════════════════════════════════════════════════════════
+const AVATARS = { 'Mobius M. Mobius': '🕵️', 'Hunter B-15': '👮', 'Ravonna Renslayer': '⚖️', 'He Who Remains': '👁️', 'Minutemen': '🚨', 'Hunter X-05': '📁' };
+const RANKS   = { 'Mobius M. Mobius': 'Analista TVA · Nível 4', 'Hunter B-15': 'Caçadora · Classe B', 'Ravonna Renslayer': 'Juíza TVA', 'He Who Remains': 'Criador da AVT', 'Minutemen': 'Unidade de Poda', 'Hunter X-05': 'Caçador · Classe X' };
+
+function showAgent(alert) {
+  const popup = document.getElementById('agent');
+  document.getElementById('ag-avatar').textContent = AVATARS[alert.agent] || '👤';
+  document.getElementById('ag-name').textContent   = alert.agent;
+  document.getElementById('ag-rank').textContent   = RANKS[alert.agent] || 'Agente AVT';
+  document.getElementById('ag-msg').textContent    = `"${alert.msg}"`;
+  popup.style.display = 'block';
+  clearTimeout(popup._t);
+  popup._t = setTimeout(closeAgent, 9000);
+}
+function closeAgent() { document.getElementById('agent').style.display = 'none'; }
+
+// ═══════════════════════════════════════════════════════════════
+// Fetch alert
+// ═══════════════════════════════════════════════════════════════
+async function fetchAlert() {
+  try {
+    const r = await fetch('/api/avt/alert');
+    const d = await r.json();
+    if (d.status === 'success') {
+      addAlert(d.alert);
+      showToast(d.alert);
+      if (Math.random() < 0.45) showAgent(d.alert);
+    }
+  } catch (e) { /* silent */ }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// Load timeline
+// ═══════════════════════════════════════════════════════════════
+async function loadTimeline() {
+  document.getElementById('tl-meta').textContent = 'Carregando dados temporais…';
+  try {
+    const r    = await fetch('/api/timeline');
+    const data = await r.json();
+    if (data.status !== 'success') throw new Error(data.message);
+
+    setSurveillance(data.surveillance_level || 1);
+
+    document.getElementById('st-commits').textContent  = data.total_commits  || 0;
+    document.getElementById('st-jobs').textContent     = data.total_jobs     || 0;
+    document.getElementById('st-branches').textContent = (data.branches || []).length;
+    document.getElementById('st-nexus').textContent    = (data.nexus_events || []).length;
+
+    const survName = ['', 'BAIXA', 'MODERADA', 'ELEVADA', 'CRÍTICA', 'MÁXIMA'][data.surveillance_level] || 'BAIXA';
+    document.getElementById('tl-meta').textContent =
+      `${data.total_jobs} caso${data.total_jobs !== 1 ? 's' : ''} · ${data.total_commits} commits · vigilância ${survName}`;
+
+    // SVG timeline
+    const scroll = document.getElementById('tl-scroll');
+    scroll.innerHTML = '';
+    const svg = renderTimeline(data);
+    scroll.appendChild(svg);
+
+    // Scroll to centre on current year
+    setTimeout(() => {
+      const jobs = data.jobs || [];
+      const yMin = jobs.length ? Math.min(data.current_year - 5, ...jobs.map(j => j.year).filter(Boolean)) : data.current_year - 5;
+      scroll.scrollLeft = Math.max(0, (data.current_year - yMin - 3) * 160);
+    }, 80);
+
+    dragScroll(scroll);
+    renderCaseFiles(data.jobs || []);
+
+    const hasNexus = (data.nexus_events || []).length > 0;
+    const stEl = document.getElementById('st-status');
+    stEl.textContent = hasNexus ? '⚠ NEXUS ATIVO' : '● MONITORANDO';
+    stEl.style.color = hasNexus ? 'var(--nexus)' : 'var(--sacred)';
+
+    // Trigger alert when surveillance is high
+    if (data.surveillance_level >= 4) setTimeout(fetchAlert, 1200);
+
+  } catch (e) {
+    document.getElementById('tl-meta').textContent = 'Erro ao carregar dados — verifique a conexão com a AVT.';
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// Drag to scroll
+// ═══════════════════════════════════════════════════════════════
+function dragScroll(el) {
+  let down = false, sx, sl;
+  el.addEventListener('mousedown',  e => { down = true;  el.style.cursor = 'grabbing'; sx = e.pageX - el.offsetLeft; sl = el.scrollLeft; });
+  document.addEventListener('mouseup',    () => { down = false; el.style.cursor = 'grab'; });
+  el.addEventListener('mousemove',  e => { if (!down) return; e.preventDefault(); el.scrollLeft = sl - (e.pageX - el.offsetLeft - sx); });
+}
+
+// ═══════════════════════════════════════════════════════════════
+// Boot
+// ═══════════════════════════════════════════════════════════════
+window.addEventListener('DOMContentLoaded', () => {
+  loadTimeline();
+  setInterval(loadTimeline, 30000);
+  setInterval(fetchAlert,   38000);
+});
+</script>
+</body>
+</html>
