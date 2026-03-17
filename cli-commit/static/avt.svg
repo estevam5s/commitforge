@@ -1,0 +1,145 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="860" height="320" viewBox="0 0 860 320">
+  <defs>
+    <linearGradient id="bgGrad" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%"   stop-color="#040810"/>
+      <stop offset="100%" stop-color="#060d1a"/>
+    </linearGradient>
+    <filter id="glow-green" x="-30%" y="-200%" width="160%" height="600%">
+      <feDropShadow dx="0" dy="0" stdDeviation="4" flood-color="#00ff88" flood-opacity="0.8"/>
+    </filter>
+    <filter id="glow-amber" x="-30%" y="-200%" width="160%" height="600%">
+      <feDropShadow dx="0" dy="0" stdDeviation="5" flood-color="#f5a623" flood-opacity="0.7"/>
+    </filter>
+    <filter id="glow-red" x="-30%" y="-200%" width="160%" height="600%">
+      <feDropShadow dx="0" dy="0" stdDeviation="6" flood-color="#ff4040" flood-opacity="0.8"/>
+    </filter>
+  </defs>
+
+  <!-- Background -->
+  <rect width="860" height="320" fill="url(#bgGrad)" rx="4"/>
+  <!-- Amber border -->
+  <rect width="860" height="320" fill="none" stroke="#f5a623" stroke-width="1.8" rx="4" opacity="0.7"/>
+  <!-- Inner border -->
+  <rect x="8" y="8" width="844" height="304" fill="none" stroke="#f5a623" stroke-width="0.5" rx="2" opacity="0.25"/>
+
+  <!-- CRT scanlines overlay -->
+  <rect width="860" height="320" fill="url(#scan)" opacity="0.04" rx="4"/>
+
+  <!-- ─── Background Sacred Timeline line (decorative) ─── -->
+  <line x1="0" y1="160" x2="860" y2="160" stroke="#00ff88" stroke-width="0.4" opacity="0.12"/>
+
+  <!-- Flowing line particles (decorative) -->
+  <line x1="0"   y1="80"  x2="200" y2="80"  stroke="#00ff88" stroke-width="0.4" opacity="0.08"/>
+  <line x1="600" y1="240" x2="860" y2="240" stroke="#00ff88" stroke-width="0.4" opacity="0.08"/>
+  <line x1="100" y1="280" x2="320" y2="280" stroke="#f5a623" stroke-width="0.3" opacity="0.06"/>
+
+  <!-- ─── LEFT — AVT Logo Section ─── -->
+  <!-- Outer ring -->
+  <circle cx="170" cy="160" r="110" fill="none" stroke="#f5a623" stroke-width="1.2" opacity="0.5"/>
+  <!-- Mid ring -->
+  <circle cx="170" cy="160" r="88"  fill="none" stroke="#f5a623" stroke-width="0.6" opacity="0.3"/>
+  <!-- Inner ring glowing -->
+  <circle cx="170" cy="160" r="66"  fill="none" stroke="#f5a623" stroke-width="1.8" filter="url(#glow-amber)" opacity="0.9"/>
+  <!-- Core fill -->
+  <circle cx="170" cy="160" r="65"  fill="#06090f" opacity="0.95"/>
+
+  <!-- Cross hairs -->
+  <line x1="170" y1="50"  x2="170" y2="270" stroke="#f5a623" stroke-width="0.7" opacity="0.35"/>
+  <line x1="60"  y1="160" x2="280" y2="160" stroke="#f5a623" stroke-width="0.7" opacity="0.35"/>
+
+  <!-- Tick marks -->
+  <line x1="170" y1="72"  x2="170" y2="82"  stroke="#f5a623" stroke-width="1.5" opacity="0.6"/>
+  <line x1="170" y1="238" x2="170" y2="248" stroke="#f5a623" stroke-width="1.5" opacity="0.6"/>
+  <line x1="82"  y1="160" x2="92"  y2="160" stroke="#f5a623" stroke-width="1.5" opacity="0.6"/>
+  <line x1="248" y1="160" x2="258" y2="160" stroke="#f5a623" stroke-width="1.5" opacity="0.6"/>
+
+  <!-- Sub-circle -->
+  <circle cx="170" cy="160" r="30" fill="none" stroke="#f5a623" stroke-width="1" opacity="0.4"/>
+  <!-- Center dot -->
+  <circle cx="170" cy="160" r="5" fill="#f5a623" filter="url(#glow-amber)"/>
+
+  <!-- AVT main text -->
+  <text x="170" y="152" text-anchor="middle" font-family="Georgia, serif" font-size="28" font-weight="bold"
+        fill="#f5a623" filter="url(#glow-amber)" letter-spacing="6">AVT</text>
+  <!-- Sub text -->
+  <text x="170" y="173" text-anchor="middle" font-family="'Courier New', monospace" font-size="7.5"
+        fill="#f5a623" opacity="0.7" letter-spacing="1.5">AUTORIDADE DE</text>
+  <text x="170" y="183" text-anchor="middle" font-family="'Courier New', monospace" font-size="7.5"
+        fill="#f5a623" opacity="0.7" letter-spacing="1.5">VARIÂNCIA TEMPORAL</text>
+
+  <!-- Orbital dots -->
+  <circle cx="170" cy="94"  r="3" fill="#f5a623" opacity="0.5"/>
+  <circle cx="246" cy="160" r="3" fill="#f5a623" opacity="0.5"/>
+  <circle cx="170" cy="226" r="3" fill="#f5a623" opacity="0.5"/>
+  <circle cx="94"  cy="160" r="3" fill="#f5a623" opacity="0.5"/>
+
+  <!-- ─── DIVIDER ─── -->
+  <line x1="300" y1="30" x2="300" y2="290" stroke="#f5a623" stroke-width="0.8" opacity="0.2"/>
+
+  <!-- ─── RIGHT — Warning content ─── -->
+
+  <!-- TOP LABEL -->
+  <text x="336" y="52" font-family="'Courier New', monospace" font-size="9" fill="#f5a623"
+        opacity="0.6" letter-spacing="3">TRANSMISSÃO CLASSIFICADA · NÍVEL 4</text>
+  <line x1="336" y1="60" x2="830" y2="60" stroke="#f5a623" stroke-width="0.5" opacity="0.2"/>
+
+  <!-- Main headline -->
+  <text x="336" y="98" font-family="Georgia, serif" font-size="24" font-weight="bold"
+        fill="#f5a623" filter="url(#glow-amber)" letter-spacing="2">ATENÇÃO, VARIANTE</text>
+
+  <!-- Body text lines -->
+  <text x="336" y="126" font-family="'Courier New', monospace" font-size="12.5" fill="#b8d4b0">
+    Cada commit retroativo que você cria
+  </text>
+  <text x="336" y="144" font-family="'Courier New', monospace" font-size="12.5" fill="#b8d4b0">
+    <tspan fill="#00ff88" filter="url(#glow-green)">altera a Linha do Tempo Sagrada.</tspan>
+  </text>
+  <text x="336" y="166" font-family="'Courier New', monospace" font-size="12.5" fill="#b8d4b0">
+    A AVT registra toda divergência temporal.
+  </text>
+  <text x="336" y="184" font-family="'Courier New', monospace" font-size="12.5" fill="#b8d4b0">
+    Commits em excesso geram um
+    <tspan fill="#ff4040" filter="url(#glow-red)"> Evento Nexus.</tspan>
+  </text>
+
+  <!-- Sacred Timeline mini-visualization -->
+  <line x1="336" y1="218" x2="830" y2="218" stroke="#00ff88" stroke-width="2" filter="url(#glow-green)" opacity="0.8"/>
+  <line x1="336" y1="218" x2="830" y2="218" stroke="#00ff88" stroke-width="10" opacity="0.06"/>
+
+  <!-- Timeline nodes -->
+  <circle cx="390" cy="218" r="6"  fill="#00ff88" filter="url(#glow-green)" opacity="0.9"/>
+  <circle cx="480" cy="218" r="8"  fill="#00ff88" filter="url(#glow-green)" opacity="0.9"/>
+  <circle cx="590" cy="218" r="6"  fill="#00ff88" filter="url(#glow-green)" opacity="0.9"/>
+  <circle cx="670" cy="218" r="10" fill="#f5a623" filter="url(#glow-amber)"/>
+
+  <!-- Branch arc off the timeline (nexus) -->
+  <path d="M 670 218 C 670 180 730 170 760 148" fill="none" stroke="#ff4040"
+        stroke-width="1.5" filter="url(#glow-red)" opacity="0.8"/>
+  <circle cx="760" cy="148" r="7" fill="#ff4040" filter="url(#glow-red)" opacity="0.9"/>
+  <text x="770" y="145" font-family="'Courier New', monospace" font-size="9"
+        fill="#ff4040" filter="url(#glow-red)">NEXUS</text>
+
+  <!-- Year labels -->
+  <text x="387" y="234" text-anchor="middle" font-family="'Courier New', monospace" font-size="9" fill="#3a6040">2021</text>
+  <text x="477" y="234" text-anchor="middle" font-family="'Courier New', monospace" font-size="9" fill="#3a6040">2022</text>
+  <text x="587" y="234" text-anchor="middle" font-family="'Courier New', monospace" font-size="9" fill="#3a6040">2023</text>
+  <text x="668" y="234" text-anchor="middle" font-family="'Courier New', monospace" font-size="9" fill="#f5a623">HOJE</text>
+
+  <!-- TVA HQ marker -->
+  <line x1="670" y1="195" x2="670" y2="240" stroke="#f5a623" stroke-width="1" stroke-dasharray="3 2" opacity="0.7"/>
+
+  <!-- LINHA SAGRADA label -->
+  <text x="580" y="256" text-anchor="middle" font-family="'Courier New', monospace" font-size="8.5"
+        fill="#2a5a3a" letter-spacing="2">── LINHA DO TEMPO SAGRADA ──</text>
+
+  <!-- Bottom warning -->
+  <line x1="336" y1="270" x2="830" y2="270" stroke="#f5a623" stroke-width="0.5" opacity="0.2"/>
+  <text x="336" y="286" font-family="'Courier New', monospace" font-size="9" fill="#f5a623" opacity="0.55" letter-spacing="1">
+    A AVT está de olho. Use o CommitForge com responsabilidade. — Mobius M. Mobius
+  </text>
+
+  <!-- Eye symbol (top right corner) -->
+  <ellipse cx="816" cy="38" rx="22" ry="13" fill="none" stroke="#f5a623" stroke-width="1.2" opacity="0.6"/>
+  <circle  cx="816" cy="38" r="6"  fill="none" stroke="#f5a623" stroke-width="1"   opacity="0.6"/>
+  <circle  cx="816" cy="38" r="2.5" fill="#f5a623" opacity="0.7"/>
+</svg>

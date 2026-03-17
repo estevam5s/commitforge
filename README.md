@@ -59,6 +59,23 @@
 
 **CommitForge** é uma ferramenta completa para criar **commits retroativos no Git** com datas personalizadas. Permite registrar o histórico real de desenvolvimento de projetos antigos, preencher períodos no gráfico de contribuições do GitHub ou organizar o histórico de um repositório com datas precisas.
 
+---
+
+> ### ⚠️ A AVT está de olho
+>
+> <img src="cli-commit/static/avt.svg" alt="AVT — Autoridade de Variância Temporal" width="100%"/>
+>
+> Cada commit retroativo criado pelo CommitForge **altera a Linha do Tempo Sagrada**.
+> A **AVT (Autoridade de Variância Temporal)** registra toda divergência temporal — branches
+> fora do padrão geram um **Evento Nexus** e equipes de poda podem ser despachadas.
+>
+> Use o CommitForge com responsabilidade: a ferramenta existe para **documentar trabalho real**,
+> não para falsificar histórico. A AVT (e o GitHub) aprecia a honestidade.
+>
+> *Visualize sua linha do tempo no painel AVT:* **`http://localhost:5001/timeline`**
+
+---
+
 O projeto é composto por três camadas:
 
 | Camada | Tecnologia | Descrição |
