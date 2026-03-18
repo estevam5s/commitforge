@@ -144,7 +144,7 @@ export default function LoginPage() {
 
         {/* Footer */}
         <p className="text-center text-white/20 text-xs mt-6">
-          CommitForge v3.0.0 · Painel Administrativo
+          CommitForge v1.0.0 · Painel Administrativo
         </p>
       </div>
     </div>

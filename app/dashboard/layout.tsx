@@ -148,7 +148,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             <Menu className="w-5 h-5" />
           </button>
           <div className="flex-1" />
-          <div className="text-white/20 text-xs font-mono">v3.0.0</div>
+          <div className="text-white/20 text-xs font-mono">v1.0.0</div>
           <div className="flex items-center gap-1.5 bg-green-500/10 border border-green-500/20 rounded-full px-3 py-1">
             <div className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
             <span className="text-green-400 text-xs">Online</span>

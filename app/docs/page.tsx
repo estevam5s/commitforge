@@ -2390,7 +2390,7 @@ function SidebarContent({ activeSection, onNavClick }: SidebarContentProps) {
             CommitForge Docs
           </span>
         </div>
-        <p className="mt-1 font-mono text-xs text-gray-500">v3.0.0</p>
+        <p className="mt-1 font-mono text-xs text-gray-500">v1.0.0</p>
       </div>
 
       {/* Link para Guia Git */}

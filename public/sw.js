@@ -1,4 +1,4 @@
-// CommitForge Service Worker v3.0.0
+// CommitForge Service Worker v1.0.0
 const CACHE_NAME = 'commitforge-v3'
 const STATIC_ASSETS = [
   '/',

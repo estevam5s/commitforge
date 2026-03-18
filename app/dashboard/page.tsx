@@ -292,7 +292,7 @@ function Sidebar({ activeSection, onNavigate }: { activeSection: Section; onNavi
       {/* Footer */}
       <div className="p-4 border-t border-white/5 space-y-2">
         <div className="flex items-center gap-2">
-          <span className="border border-[#f5a623]/30 text-[#f5a623] text-[9px] font-mono px-2 py-0.5 tracking-widest">v3.0.0</span>
+          <span className="border border-[#f5a623]/30 text-[#f5a623] text-[9px] font-mono px-2 py-0.5 tracking-widest">v1.0.0</span>
           <span className="text-white/20 text-[9px] tracking-widest">CommitForge</span>
         </div>
         <a
@@ -1666,7 +1666,7 @@ export default function DashboardPage() {
 
         {/* Footer */}
         <div className="mx-6 mb-6 border-t border-white/5 pt-4 flex items-center justify-between text-[10px] text-white/15 font-mono tracking-widest">
-          <span>AVT · COMMITFORGE v3.0.0 · PAINEL CLASSIFICADO</span>
+          <span>AVT · COMMITFORGE v1.0.0 · PAINEL CLASSIFICADO</span>
           <span>ÚLTIMA SINC: {lastUpdated?.toLocaleTimeString("pt-BR") ?? "—"}</span>
         </div>
       </main>

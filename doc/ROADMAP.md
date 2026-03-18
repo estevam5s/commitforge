@@ -51,7 +51,7 @@
 
 ---
 
-## v3.0.0 — Plataforma (futuro distante)
+## v1.0.0 — Plataforma (futuro distante)
 
 - [ ] **CommitForge Cloud** — serviço SaaS para equipes
 - [ ] **Dashboard de time** — visualizar contribuições de todos os membros
