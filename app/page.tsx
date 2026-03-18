@@ -32,6 +32,30 @@ function LinuxIcon({ className }: { className?: string }) {
   )
 }
 
+function WindowsIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+      <path d="M0 3.449L9.75 2.1v9.451H0m10.949-9.602L24 0v11.4H10.949M0 12.6h9.75v9.451L0 20.699M10.949 12.6H24V24l-12.9-1.801"/>
+    </svg>
+  )
+}
+
+function DebianIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+      <path d="M11.835.001C5.395.001 0 5.396 0 11.835c0 6.44 5.395 11.835 11.835 11.835 6.439 0 11.835-5.395 11.835-11.835C23.67 5.396 18.274.001 11.835.001zm.72 2.142c1.009.004 1.818.152 2.557.509.09.04.085.053-.018.04-.19-.022-.67-.032-.95-.017-1.197.064-1.9.618-2.44 1.32-.18.234-.16.25.069.075.554-.424 1.138-.627 1.73-.627.47 0 .956.125 1.406.432.558.384.847.94.81 1.638-.082 1.564-1.384 2.57-2.875 2.21-.58-.142-1.053-.519-1.245-1.043-.083-.23-.103-.46-.063-.633.16-.694.87-1.064 1.447-.774.199.1.367.269.463.481.12.264.1.542-.067.742-.176.207-.44.29-.692.21-.19-.06-.306-.18-.347-.347-.042-.171.022-.34.184-.459.072-.053.04-.12-.073-.16-.35-.12-.717.155-.757.554-.022.218.028.429.147.611.32.497 1.008.72 1.755.555 1.053-.233 1.737-1.173 1.625-2.237-.091-.854-.761-1.582-1.766-1.91a4.155 4.155 0 0 0-1.308-.201c-2.28 0-4.064 1.813-4.195 4.083-.06 1.023.228 1.914.76 2.6.166.213.16.217-.038.054-.67-.544-1.153-1.305-1.39-2.21-.102-.386-.142-.795-.108-1.22.214-2.697 2.534-4.877 5.378-4.876zm2.638 3.218c.2.003.398.027.58.074 1.268.327 2.024 1.47 1.992 2.88-.027 1.202-.5 2.303-1.253 3.12-.625.678-1.357 1.045-2.076 1.045-.335 0-.673-.087-.993-.265-.29-.162-.497-.388-.607-.668-.275-.7.032-1.48.741-1.8.43-.194.85-.152 1.183.1.214.16.358.404.385.672.03.293-.087.567-.313.738-.22.166-.492.19-.718.064-.145-.08-.25-.215-.29-.37-.032-.12-.008-.233.07-.324.052-.06.12-.105.202-.136.07-.025.072-.04-.005-.065-.26-.083-.558.125-.62.408-.018.083-.018.168 0 .248.08.367.408.608.834.608.72 0 1.366-.716 1.462-1.635.086-.827-.306-1.547-.96-1.807-.26-.102-.52-.14-.77-.14-.98 0-1.905.63-2.578 1.643-.164.245-.31.514-.438.808-.13.3-.233.617-.305.948-.036.167-.062.334-.077.5-.038.423-.014.843.07 1.244.37 1.764 1.766 3.103 3.557 3.41.28.048.566.073.857.073 3.31 0 5.995-2.685 5.995-5.995 0-3.31-2.685-5.995-5.995-5.995a5.95 5.95 0 0 0-.7.041z"/>
+    </svg>
+  )
+}
+
+function ArchIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+      <path d="M11.969.398C10.738 3.195 10.068 5.02 8.984 7.822c.64.697 1.398 1.49 2.78 2.372-.8.028-1.916-.346-2.892-.832C7.768 11.994 6.5 14.998 4.5 19.5h1.375c.447-.96.983-2.044 1.618-3.247.963.514 2.086.95 3.458 1.09-.014.038-.028.077-.04.114-.217.634-.362 1.347-.337 2.043H12c-.026-.696.12-1.41.337-2.043-.012-.037-.026-.076-.04-.114 1.372-.14 2.495-.576 3.458-1.09.635 1.203 1.171 2.287 1.618 3.247h1.375c-2-4.502-3.268-7.506-4.368-9.638-.976.486-2.092.86-2.892.832 1.382-.882 2.14-1.675 2.78-2.372C13.184 5.02 12.514 3.195 11.969.398z"/>
+    </svg>
+  )
+}
+
 function DockerIcon({ className }: { className?: string }) {
   return (
     <svg className={className} viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
@@ -40,7 +64,7 @@ function DockerIcon({ className }: { className?: string }) {
   )
 }
 
-type InstallTab = "curl" | "docker" | "macos" | "linux"
+type InstallTab = "curl" | "docker" | "macos" | "linux" | "windows" | "debian" | "arch"
 
 interface TerminalLine {
   text: string
@@ -106,14 +130,44 @@ pip install commitforge`,
     description: "macOS 12+ (Monterey ou superior). Python 3.8+ via Homebrew recomendado.",
   },
   linux: {
-    code: `# Debian/Ubuntu
+    code: `# Ubuntu / Fedora / genérico — via pip
+pip install commitforge
+
+# Ou via curl
+curl -fsSL https://raw.githubusercontent.com/estevam5s/commitforge/main/cli-commit/install.sh | bash`,
+    description: "Compatível com qualquer distribuição Linux com Python 3.8+.",
+  },
+  windows: {
+    code: `# Via winget (Windows Package Manager)
+winget install estevam5s.commitforge
+
+# Ou via PowerShell (sem winget)
+irm https://raw.githubusercontent.com/estevam5s/commitforge/main/cli-commit/install.ps1 | iex
+
+# Ou via pip (requer Python 3.8+)
+pip install commitforge`,
+    description: "Windows 10/11. Requer Python 3.8+ ou winget. PowerShell 5+ recomendado.",
+  },
+  debian: {
+    code: `# Debian / Ubuntu — repositório APT oficial
 curl -fsSL https://apt.commitforge.dev/gpg | sudo apt-key add -
 echo "deb https://apt.commitforge.dev stable main" | sudo tee /etc/apt/sources.list.d/commitforge.list
 sudo apt update && sudo apt install commitforge
 
 # Ou via pip
+pip3 install commitforge`,
+    description: "Debian 11+, Ubuntu 20.04+. Requer Python 3.8+.",
+  },
+  arch: {
+    code: `# Arch Linux — via AUR (usando yay)
+yay -S commitforge
+
+# Ou via paru
+paru -S commitforge
+
+# Ou instalação manual via pip
 pip install commitforge`,
-    description: "Compatível com Debian, Ubuntu, Fedora, Arch. Requer Python 3.8+.",
+    description: "Arch Linux e derivados (Manjaro, EndeavourOS). Pacote disponível no AUR.",
   },
 }
 
@@ -575,12 +629,15 @@ export default function CommitForgeLanding() {
         <div className="max-w-3xl mx-auto">
           {/* Tabs */}
           <div className="flex flex-wrap border-b border-gray-700 mb-0 gap-0">
-            {(["curl", "docker", "macos", "linux"] as InstallTab[]).map((tab) => {
+            {(["curl", "docker", "macos", "linux", "windows", "debian", "arch"] as InstallTab[]).map((tab) => {
               const labels: Record<InstallTab, { label: string; icon: React.ReactNode }> = {
-                curl:   { label: "curl",   icon: <Download className="w-4 h-4" /> },
-                docker: { label: "Docker", icon: <DockerIcon className="w-4 h-4" /> },
-                macos:  { label: "macOS",  icon: <Apple className="w-4 h-4" /> },
-                linux:  { label: "Linux",  icon: <LinuxIcon className="w-4 h-4" /> },
+                curl:    { label: "curl",    icon: <Download className="w-4 h-4" /> },
+                docker:  { label: "Docker",  icon: <DockerIcon className="w-4 h-4" /> },
+                macos:   { label: "macOS",   icon: <Apple className="w-4 h-4" /> },
+                linux:   { label: "Linux",   icon: <LinuxIcon className="w-4 h-4" /> },
+                windows: { label: "Windows", icon: <WindowsIcon className="w-4 h-4" /> },
+                debian:  { label: "Debian",  icon: <DebianIcon className="w-4 h-4" /> },
+                arch:    { label: "Arch",    icon: <ArchIcon className="w-4 h-4" /> },
               }
               const isActive = activeInstallTab === tab
               return (

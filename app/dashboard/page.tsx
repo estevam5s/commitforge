@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useState, useCallback, useRef } from "react"
-import { RefreshCw, Star, Download, GitCommit, MessageSquare, Lightbulb, Database, Activity, ChevronDown, ChevronUp, Filter } from "lucide-react"
+import { RefreshCw, Star, Download, GitCommit, MessageSquare, Lightbulb, Database, Activity, ChevronDown, ChevronUp, Filter, Copy, Check, Terminal, Shield, Zap, Server, ExternalLink } from "lucide-react"
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, PieChart, Pie, Cell } from "recharts"
 
 interface StatsData {
@@ -32,6 +32,21 @@ const AVT_MESSAGES = [
 
 function formatDate(iso: string) { return new Date(iso).toLocaleDateString("pt-BR", { day: "2-digit", month: "short", year: "numeric" }) }
 function formatDuration(ms: number | null) { if (!ms) return "—"; if (ms < 1000) return `${ms}ms`; if (ms < 60000) return `${(ms / 1000).toFixed(1)}s`; return `${Math.floor(ms / 60000)}m ${Math.floor((ms % 60000) / 1000)}s` }
+function downloadJSON(filename: string, payload: unknown) {
+  const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement("a"); a.href = url; a.download = filename; a.click()
+  URL.revokeObjectURL(url)
+}
+function downloadCSV(filename: string, rows: Record<string, unknown>[]) {
+  if (!rows.length) return
+  const headers = Object.keys(rows[0])
+  const lines = [headers.join(","), ...rows.map(r => headers.map(h => JSON.stringify(r[h] ?? "")).join(","))]
+  const blob = new Blob([lines.join("\n")], { type: "text/csv" })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement("a"); a.href = url; a.download = filename; a.click()
+  URL.revokeObjectURL(url)
+}
 
 function AVTBadge({ value, map }: { value: string; map: Record<string, string> }) {
   const col: Record<string, string> = { pending: "border-yellow-500/40 text-yellow-400", in_progress: "border-blue-500/40 text-blue-400", running: "border-amber-500/40 text-amber-400", completed: "border-green-500/40 text-[#00ff88]", done: "border-green-500/40 text-[#00ff88]", failed: "border-red-500/40 text-red-400", cancelled: "border-white/10 text-white/30", reviewed: "border-purple-500/40 text-purple-400", low: "border-white/10 text-white/30", medium: "border-yellow-500/40 text-yellow-400", high: "border-orange-500/40 text-orange-400", critical: "border-red-500/40 text-red-400" }
@@ -113,6 +128,10 @@ export default function DashboardPage() {
   const [clock, setClock]             = useState("")
   const [scanY, setScanY]             = useState(0)
   const alertTimerRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const [copiedCmd, setCopiedCmd]     = useState<string | null>(null)
+  const [flaskStatus, setFlaskStatus] = useState<"checking" | "online" | "offline" | "idle">("idle")
+  const [tokenInput, setTokenInput]   = useState("")
+  const [tokenStatus, setTokenStatus] = useState<"idle" | "checking" | "valid" | "invalid">("idle")
 
   // Clock
   useEffect(() => {
@@ -155,6 +174,31 @@ export default function DashboardPage() {
 
   const filteredFeedbacks = data?.feedbacks.filter(f => feedbackFilter === "all" || f.category === feedbackFilter) ?? []
   const avgRating = data?.feedbacks.length ? (data.feedbacks.reduce((a, f) => a + (f.rating ?? 0), 0) / data.feedbacks.filter(f => f.rating).length).toFixed(1) : "—"
+
+  const copyCmd = async (cmd: string) => {
+    try { await navigator.clipboard.writeText(cmd) } catch { /* ignore */ }
+    setCopiedCmd(cmd)
+    setTimeout(() => setCopiedCmd(null), 1500)
+  }
+
+  const checkFlask = async () => {
+    setFlaskStatus("checking")
+    try {
+      const res = await fetch("http://localhost:5001/api/health", { signal: AbortSignal.timeout(3000) })
+      setFlaskStatus(res.ok ? "online" : "offline")
+    } catch { setFlaskStatus("offline") }
+  }
+
+  const checkToken = async () => {
+    if (!tokenInput.trim()) return
+    setTokenStatus("checking")
+    try {
+      const res = await fetch("https://api.github.com/user", {
+        headers: { Authorization: `token ${tokenInput.trim()}` },
+      })
+      setTokenStatus(res.ok ? "valid" : "invalid")
+    } catch { setTokenStatus("invalid") }
+  }
 
   const customTooltipStyle = { background: "#060910", border: "1px solid rgba(245,166,35,0.3)", borderRadius: 0, fontFamily: "monospace", fontSize: 11 }
 
@@ -469,29 +513,161 @@ export default function DashboardPage() {
           </div>
           <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-3">
             {[
-              { label: "Instalações", desc: "Todos os registros de install", icon: "⬇" },
-              { label: "Relatórios", desc: "Feedbacks dos agentes", icon: "◉" },
-              { label: "Commits Log", desc: "Histórico de eventos temporais", icon: "⬡" },
-              { label: "Nexus Events", desc: "Melhorias e anomalias", icon: "◈" },
+              { label: "Instalações",  desc: "Todos os registros de install",   icon: "⬇", key: "installs"  },
+              { label: "Relatórios",   desc: "Feedbacks dos agentes",            icon: "◉", key: "feedbacks" },
+              { label: "Commits Log",  desc: "Histórico de eventos temporais",   icon: "⬡", key: "commits"   },
+              { label: "Nexus Events", desc: "Melhorias e anomalias",            icon: "◈", key: "nexus"     },
             ].map(item => (
               <button
                 key={item.label}
-                onClick={() => alert(`Exportação via Supabase Dashboard → Table Editor → Export`)}
-                className="border border-[#00ff88]/15 hover:border-[#00ff88]/40 hover:bg-[#00ff88]/5 p-4 text-left transition-all group"
+                onClick={() => {
+                  if (!data) return
+                  if (item.key === "feedbacks") downloadCSV("feedbacks.csv", data.feedbacks as unknown as Record<string, unknown>[])
+                  else if (item.key === "commits")   downloadCSV("commits_log.csv", data.recent_commits as unknown as Record<string, unknown>[])
+                  else if (item.key === "nexus")     downloadJSON("cli_improvements.json", data.improvements)
+                  else if (item.key === "installs")  downloadJSON("installs_summary.json", { by_platform: data.by_platform, by_method: data.by_method, last_30_days: data.last_30_days, total: data.total_installs })
+                }}
+                className="border border-[#00ff88]/15 hover:border-[#00ff88]/40 hover:bg-[#00ff88]/5 p-4 text-left transition-all group disabled:opacity-40"
+                disabled={!data}
               >
                 <div className="text-xl mb-2 text-[#00ff88]" style={{ textShadow: "0 0 10px rgba(0,255,136,0.4)" }}>{item.icon}</div>
                 <p className="text-white/70 text-xs group-hover:text-white transition-colors">{item.label}</p>
                 <p className="text-white/25 text-[10px] mt-0.5">{item.desc}</p>
                 <div className="mt-3 flex items-center gap-1 text-[#00ff88]/40 group-hover:text-[#00ff88] transition-colors text-[10px] tracking-widest">
                   <Download className="w-2.5 h-2.5" />
-                  EXPORTAR CSV
+                  {item.key === "installs" || item.key === "nexus" ? "EXPORTAR JSON" : "EXPORTAR CSV"}
                 </div>
               </button>
             ))}
           </div>
           <p className="text-white/15 text-[10px] mt-4 tracking-widest">
-            PARA BACKUPS COMPLETOS: SUPABASE DASHBOARD → STORAGE → BACKUPS
+            CLIQUE PARA BAIXAR O ARQUIVO · DADOS EM TEMPO REAL DO BANCO TEMPORAL
           </p>
+        </section>
+
+        {/* ── Ferramentas Rápidas ──────────────────────────────── */}
+        <section className="grid lg:grid-cols-3 gap-5">
+
+          {/* CLI Commands */}
+          <div className="relative border border-[#f5a623]/15 bg-[#f5a623]/[0.02] rounded-sm p-5 overflow-hidden lg:col-span-1">
+            <span className="absolute top-0 left-0 w-4 h-4 border-t border-l border-[#f5a623]/30" />
+            <span className="absolute top-0 right-0 w-4 h-4 border-t border-r border-[#f5a623]/30" />
+            <span className="absolute bottom-0 left-0 w-4 h-4 border-b border-l border-[#f5a623]/30" />
+            <span className="absolute bottom-0 right-0 w-4 h-4 border-b border-r border-[#f5a623]/30" />
+            <div className="flex items-center gap-2 mb-4">
+              <Terminal className="w-3.5 h-3.5 text-[#f5a623]" />
+              <h2 className="text-[#f5a623] text-xs tracking-widest uppercase">Comandos CLI Rápidos</h2>
+            </div>
+            <div className="space-y-2">
+              {[
+                { label: "Iniciar servidor",       cmd: "commitforge servidor --porta 5001 --abrir" },
+                { label: "Commit interativo",      cmd: "commitforge commit --interativo" },
+                { label: "Preview de grupos",      cmd: "commitforge preview --year 2023" },
+                { label: "Ver histórico",          cmd: "commitforge historico" },
+                { label: "Atualizar CLI",          cmd: "commitforge atualizar" },
+                { label: "Validar token",          cmd: "commitforge validar-token --token $GITHUB_TOKEN" },
+              ].map(({ label, cmd }) => (
+                <div key={label} className="flex items-center justify-between gap-2 p-2 border border-white/[0.04] hover:border-[#f5a623]/20 group transition-all">
+                  <div className="min-w-0">
+                    <p className="text-white/40 text-[10px] tracking-widest uppercase">{label}</p>
+                    <p className="text-white/60 text-xs font-mono truncate group-hover:text-white/80 transition-colors">{cmd}</p>
+                  </div>
+                  <button onClick={() => copyCmd(cmd)} className="flex-shrink-0 text-white/20 hover:text-[#f5a623] transition-colors p-1">
+                    {copiedCmd === cmd ? <Check className="w-3 h-3 text-[#00ff88]" /> : <Copy className="w-3 h-3" />}
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Flask Health + Token Validator */}
+          <div className="lg:col-span-2 grid gap-5">
+
+            {/* Flask Server Status */}
+            <div className="relative border border-[#4aabff]/15 bg-[#4aabff]/[0.02] rounded-sm p-5 overflow-hidden">
+              <span className="absolute top-0 left-0 w-4 h-4 border-t border-l border-[#4aabff]/30" />
+              <span className="absolute top-0 right-0 w-4 h-4 border-t border-r border-[#4aabff]/30" />
+              <span className="absolute bottom-0 left-0 w-4 h-4 border-b border-l border-[#4aabff]/30" />
+              <span className="absolute bottom-0 right-0 w-4 h-4 border-b border-r border-[#4aabff]/30" />
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-2">
+                  <Server className="w-3.5 h-3.5 text-[#4aabff]" />
+                  <h2 className="text-[#4aabff] text-xs tracking-widest uppercase">Status do Servidor Flask</h2>
+                </div>
+                <button
+                  onClick={checkFlask}
+                  disabled={flaskStatus === "checking"}
+                  className="flex items-center gap-1.5 border border-[#4aabff]/30 hover:border-[#4aabff]/60 text-[#4aabff]/60 hover:text-[#4aabff] px-3 py-1 text-[10px] tracking-widest transition-all disabled:opacity-40"
+                >
+                  <Zap className={`w-3 h-3 ${flaskStatus === "checking" ? "animate-pulse" : ""}`} />
+                  VERIFICAR
+                </button>
+              </div>
+              <div className="grid grid-cols-3 gap-3">
+                {[
+                  { url: "http://localhost:5001",          label: "Interface",    route: "/" },
+                  { url: "http://localhost:5001/timeline", label: "Linha do Tempo", route: "/timeline" },
+                  { url: "http://localhost:5001/api/health", label: "Health API", route: "/api/health" },
+                ].map(({ url, label, route }) => (
+                  <a key={route} href={url} target="_blank" rel="noreferrer"
+                    className="border border-[#4aabff]/10 hover:border-[#4aabff]/40 hover:bg-[#4aabff]/5 p-3 transition-all group"
+                  >
+                    <p className="text-[#4aabff]/60 group-hover:text-[#4aabff] text-[10px] tracking-widest flex items-center gap-1">
+                      {label} <ExternalLink className="w-2.5 h-2.5 opacity-0 group-hover:opacity-100 transition-opacity" />
+                    </p>
+                    <p className="text-white/25 text-[10px] font-mono mt-0.5">{route}</p>
+                  </a>
+                ))}
+              </div>
+              {flaskStatus !== "idle" && (
+                <div className={`mt-3 flex items-center gap-2 text-xs font-mono tracking-widest ${
+                  flaskStatus === "online" ? "text-[#00ff88]" :
+                  flaskStatus === "offline" ? "text-[#ff4040]" : "text-[#f5a623]"
+                }`}>
+                  <PulsingDot color={flaskStatus === "online" ? "#00ff88" : flaskStatus === "offline" ? "#ff4040" : "#f5a623"} />
+                  {flaskStatus === "checking" ? "VERIFICANDO..." : flaskStatus === "online" ? "SERVIDOR ONLINE — PRONTO PARA OPERAR" : "SERVIDOR OFFLINE — EXECUTE: commitforge servidor"}
+                </div>
+              )}
+            </div>
+
+            {/* GitHub Token Validator */}
+            <div className="relative border border-[#00ff88]/15 bg-[#00ff88]/[0.02] rounded-sm p-5 overflow-hidden">
+              <span className="absolute top-0 left-0 w-4 h-4 border-t border-l border-[#00ff88]/30" />
+              <span className="absolute top-0 right-0 w-4 h-4 border-t border-r border-[#00ff88]/30" />
+              <span className="absolute bottom-0 left-0 w-4 h-4 border-b border-l border-[#00ff88]/30" />
+              <span className="absolute bottom-0 right-0 w-4 h-4 border-b border-r border-[#00ff88]/30" />
+              <div className="flex items-center gap-2 mb-4">
+                <Shield className="w-3.5 h-3.5 text-[#00ff88]" />
+                <h2 className="text-[#00ff88] text-xs tracking-widest uppercase">Validar Token GitHub</h2>
+              </div>
+              <div className="flex gap-2">
+                <input
+                  type="password"
+                  value={tokenInput}
+                  onChange={e => setTokenInput(e.target.value)}
+                  onKeyDown={e => e.key === "Enter" && checkToken()}
+                  placeholder="ghp_xxxxxxxxxxxxxxxxxxxx"
+                  className="flex-1 bg-black border border-[#00ff88]/20 focus:border-[#00ff88]/50 outline-none px-3 py-2 text-xs font-mono text-white/70 placeholder-white/15 transition-colors"
+                />
+                <button
+                  onClick={checkToken}
+                  disabled={!tokenInput.trim() || tokenStatus === "checking"}
+                  className="border border-[#00ff88]/30 hover:border-[#00ff88]/70 text-[#00ff88]/60 hover:text-[#00ff88] px-4 py-2 text-[10px] tracking-widest transition-all disabled:opacity-40 flex items-center gap-1.5"
+                >
+                  {tokenStatus === "checking" ? <RefreshCw className="w-3 h-3 animate-spin" /> : <Shield className="w-3 h-3" />}
+                  VALIDAR
+                </button>
+              </div>
+              {tokenStatus !== "idle" && tokenStatus !== "checking" && (
+                <div className={`mt-3 flex items-center gap-2 text-xs font-mono tracking-widest ${tokenStatus === "valid" ? "text-[#00ff88]" : "text-[#ff4040]"}`}>
+                  <PulsingDot color={tokenStatus === "valid" ? "#00ff88" : "#ff4040"} />
+                  {tokenStatus === "valid" ? "TOKEN VÁLIDO — AUTENTICAÇÃO CONFIRMADA PELA AVT" : "TOKEN INVÁLIDO — VERIFIQUE AS PERMISSÕES (repo, workflow)"}
+                </div>
+              )}
+              <p className="text-white/10 text-[10px] mt-3 tracking-widest">O TOKEN NÃO É ARMAZENADO. VALIDAÇÃO DIRETO NA API DO GITHUB.</p>
+            </div>
+
+          </div>
         </section>
 
         {/* ── Footer ────────────────────────────────────────────── */}

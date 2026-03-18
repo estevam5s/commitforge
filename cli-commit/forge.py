@@ -1273,13 +1273,19 @@ def servidor(porta, host, debug, abrir, sem_avt):
         _th.Thread(target=_open_browser, daemon=True).start()
 
     # ── Iniciar Flask ────────────────────────────────────────────────
+    install_dir = os.path.dirname(os.path.abspath(__file__))
+    venv_python = os.path.join(install_dir, 'venv', 'bin', 'python')
+    if not os.path.exists(venv_python):
+        venv_python = os.path.join(install_dir, 'venv', 'Scripts', 'python.exe')
+    if not os.path.exists(venv_python):
+        venv_python = sys.executable
     env = os.environ.copy()
     env['PORT']  = str(porta)
     env['HOST']  = host
     env['DEBUG'] = 'true' if debug else 'false'
     try:
         subprocess.run(
-            [sys.executable, app_path],
+            [venv_python, app_path],
             check=True, env=env,
             cwd=os.path.dirname(app_path),
         )
@@ -1418,6 +1424,42 @@ def atualizar(pre, dry_run, branch):
             with open(req_path, 'w', encoding='utf-8') as fh:
                 fh.write(req_resp.text)
             info('requirements.txt atualizado.')
+    except Exception:
+        pass
+
+    # ── Sincronizar app.py (servidor Flask) ──────────────────────────
+    flask_files = [
+        (f'https://raw.githubusercontent.com/estevam5s/commitforge/{target_branch}/cli-commit/app.py',
+         os.path.join(install_dir, 'app.py')),
+    ]
+    for furl, fpath in flask_files:
+        try:
+            fr = _requests.get(furl, timeout=10)
+            if fr.status_code == 200:
+                with open(fpath, 'w', encoding='utf-8') as fh:
+                    fh.write(fr.text)
+                info(f'Atualizado: {os.path.basename(fpath)}')
+        except Exception:
+            pass
+
+    # ── Sincronizar templates/ e static/ ─────────────────────────────
+    import zipfile as _zf
+    import io as _io
+    try:
+        zip_url = f'https://github.com/estevam5s/commitforge/archive/refs/heads/{target_branch}.zip'
+        resp = _requests.get(zip_url, timeout=20)
+        if resp.status_code == 200:
+            with _zf.ZipFile(_io.BytesIO(resp.content)) as zf:
+                prefix = f'commitforge-{target_branch}/cli-commit/'
+                for member in zf.namelist():
+                    for folder in ('templates/', 'static/'):
+                        if member.startswith(prefix + folder) and not member.endswith('/'):
+                            rel = member[len(prefix):]
+                            dest = os.path.join(install_dir, rel)
+                            os.makedirs(os.path.dirname(dest), exist_ok=True)
+                            with zf.open(member) as src, open(dest, 'wb') as dst:
+                                dst.write(src.read())
+            info('templates/ e static/ sincronizados.')
     except Exception:
         pass
 

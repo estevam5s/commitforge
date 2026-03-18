@@ -89,6 +89,7 @@ const sidebarSections: SidebarSection[] = [
       { title: "Comando lote", id: "forge-lote" },
       { title: "Desinstalar", id: "forge-desinstalar" },
       { title: "Servidor", id: "forge-servidor" },
+      { title: "Atualizar CLI", id: "forge-atualizar" },
     ],
   },
   {
@@ -1196,16 +1197,28 @@ commitforge desinstalar --confirmar`}
       <div>
         <H1>Comando: servidor</H1>
         <P>
-          Inicia o servidor Flask com a interface web e a API REST na porta
-          especificada.
+          Inicia o servidor Flask com a interface web, a API REST e a Linha do
+          Tempo AVT. Detecta automaticamente conflito de porta e sobe na próxima
+          disponível.
         </P>
         <H2>Sintaxe</H2>
         <CodeBlock
           id="srv-syntax"
           lang="bash"
-          code="commitforge servidor [--porta PORTA] [--host HOST]"
+          code="commitforge servidor [--porta PORTA] [--host HOST] [--debug] [--abrir] [--sem-avt]"
           copiedStates={copiedStates}
           onCopy={onCopy}
+        />
+        <H2>Flags</H2>
+        <DocTable
+          headers={["Flag", "Atalho", "Padrão", "Descrição"]}
+          rows={[
+            ["--porta",   "-p", "5000",    "Porta TCP (auto-incrementa se ocupada)"],
+            ["--host",    "-H", "0.0.0.0", "Interface de escuta (0.0.0.0 = toda a rede)"],
+            ["--debug",   "-D", "false",   "Ativar modo debug do Flask com live-reload"],
+            ["--abrir",   "-o", "false",   "Abrir o navegador automaticamente após iniciar"],
+            ["--sem-avt", "—",  "false",   "Ocultar banner da AVT ao iniciar"],
+          ]}
         />
         <H2>Exemplos</H2>
         <CodeBlock
@@ -1214,19 +1227,116 @@ commitforge desinstalar --confirmar`}
           code={`# Porta padrão 5000
 commitforge servidor
 
-# Porta customizada
-commitforge servidor --porta 8080
+# Porta customizada com abertura automática do browser
+commitforge servidor --porta 3333 --abrir
 
-# Acessível na rede local
-commitforge servidor --host 0.0.0.0 --porta 5000`}
+# Modo debug (live-reload ao salvar arquivos)
+commitforge servidor --porta 8080 --debug
+
+# Acessível na rede local, sem banner da AVT
+commitforge servidor --host 0.0.0.0 --porta 5001 --sem-avt`}
           copiedStates={copiedStates}
           onCopy={onCopy}
         />
+        <H2>Rotas disponíveis</H2>
+        <DocTable
+          headers={["Rota", "Método", "Descrição"]}
+          rows={[
+            ["/",              "GET", "Interface principal (formulário de commit)"],
+            ["/timeline",      "GET", "Linha do Tempo AVT — commits como Sacred Timeline"],
+            ["/api/jobs",      "GET", "Listar jobs de commits em execução/histórico"],
+            ["/api/preview",   "POST","Prévia dos grupos de commits antes de executar"],
+            ["/api/health",    "GET", "Status do servidor (JSON)"],
+            ["/api/timeline",  "GET", "Dados da linha do tempo (JSON)"],
+            ["/api/avt/alert", "GET", "Alerta aleatório da AVT (JSON)"],
+          ]}
+        />
         <P>
-          Após iniciar, abra{" "}
+          Após iniciar, acesse{" "}
           <span className="text-green-400 font-mono">http://localhost:5000</span>{" "}
-          no navegador para acessar a interface web.
+          (ou a porta configurada) no navegador. A Linha do Tempo AVT está em{" "}
+          <span className="text-green-400 font-mono">/timeline</span>.
         </P>
+        <div className="mt-3 rounded border border-yellow-800 bg-yellow-950/50 p-4 text-sm text-yellow-300">
+          <strong>macOS:</strong> a porta 5000 pode estar ocupada pelo AirPlay Receiver.
+          Use <code className="font-mono text-yellow-200">--porta 5001</code> ou deixe o
+          CommitForge detectar automaticamente a próxima porta livre.
+        </div>
+      </div>
+    )
+  }
+
+  if (activeSection === "forge-atualizar") {
+    return (
+      <div>
+        <H1>Comando: atualizar</H1>
+        <P>
+          Atualiza o CommitForge instalado localmente para a versão mais recente
+          sem precisar desinstalar e reinstalar. Faz download do código-fonte
+          diretamente do GitHub e substitui os arquivos locais com backup automático.
+        </P>
+        <H2>Sintaxe</H2>
+        <CodeBlock
+          id="upd-syntax"
+          lang="bash"
+          code="commitforge atualizar [--branch BRANCH] [--pre] [--dry-run]"
+          copiedStates={copiedStates}
+          onCopy={onCopy}
+        />
+        <H2>Flags</H2>
+        <DocTable
+          headers={["Flag", "Padrão", "Descrição"]}
+          rows={[
+            ["--branch BRANCH", "main",  "Branch do GitHub de onde baixar (ex: dev, v4)"],
+            ["--pre",           "false", "Incluir versões pré-release / release candidates"],
+            ["--dry-run",       "false", "Simular a atualização sem alterar nenhum arquivo"],
+          ]}
+        />
+        <H2>Exemplos</H2>
+        <CodeBlock
+          id="upd-examples"
+          lang="bash"
+          code={`# Atualizar para a versão estável mais recente
+commitforge atualizar
+
+# Ver se há atualização disponível (sem alterar arquivos)
+commitforge atualizar --dry-run
+
+# Baixar da branch de desenvolvimento
+commitforge atualizar --branch dev
+
+# Incluir versões pré-release
+commitforge atualizar --pre`}
+          copiedStates={copiedStates}
+          onCopy={onCopy}
+        />
+        <H2>O que acontece durante a atualização</H2>
+        <UL items={[
+          "Baixa forge.py do GitHub (branch configurada)",
+          "Compara a versão remota com a instalada localmente",
+          "Se a versão remota for mais nova, cria backup em ~/.commitforge/forge.py.bak.{versão}",
+          "Substitui forge.py e requirements.txt com os arquivos mais recentes",
+          "Também sincroniza app.py, templates/ e static/ (servidor Flask)",
+          "Se a versão já for atual, avisa e não faz nada",
+        ]} />
+        <H2>Localização dos arquivos</H2>
+        <CodeBlock
+          id="upd-paths"
+          lang="bash"
+          code={`~/.commitforge/forge.py          # CLI principal (atualizado)
+~/.commitforge/app.py           # Servidor Flask (atualizado)
+~/.commitforge/templates/       # Templates HTML (atualizados)
+~/.commitforge/static/          # Arquivos estáticos (atualizados)
+~/.commitforge/forge.py.bak.X.Y.Z  # Backup da versão anterior`}
+          copiedStates={copiedStates}
+          onCopy={onCopy}
+        />
+        <div className="mt-4 rounded border border-blue-800 bg-blue-950/50 p-4 text-sm text-blue-300">
+          <strong>Dica:</strong> Use <code className="text-blue-200 font-mono">--dry-run</code> antes de atualizar para ver o que vai mudar sem risco.
+        </div>
+        <div className="mt-3 rounded border border-yellow-800 bg-yellow-950/50 p-4 text-sm text-yellow-300">
+          <strong>Requer:</strong> conexão com a internet e acesso ao GitHub (raw.githubusercontent.com).
+        </div>
       </div>
     )
   }
