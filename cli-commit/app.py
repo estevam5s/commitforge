@@ -618,6 +618,24 @@ def _finish_job(repo, repo_path, repo_info, github_token, push,
         _stats_total_commits += commits_made
         _add_job_log(job_id, f"Job concluído: {commits_made} commits criados.")
         _persist_completed_job(active_jobs[job_id])
+        # Notify Guardian
+        try:
+            import requests as _req
+            _dashboard_url = os.getenv('DASHBOARD_URL', 'http://localhost:3000')
+            _job = active_jobs[job_id]
+            _req.post(f'{_dashboard_url}/api/guardian/event', json={
+                'operator':      _job.get('github_user', 'anonymous'),
+                'repo_name':     _job.get('repo_name'),
+                'repo_url':      _job.get('repo_url'),
+                'commit_year':   _job.get('year'),
+                'commits_count': _job.get('commits_made', 0),
+                'branch_name':   _job.get('branch'),
+                'mode':          _job.get('commit_mode', 'unknown'),
+                'source':        'flask',
+                'session_id':    _job.get('id'),
+            }, timeout=2)
+        except Exception:
+            pass
     logger.info(f"Job {job_id} concluído: {commits_made} commits")
 
 
@@ -1127,6 +1145,62 @@ def get_avt_alert():
     chosen['timestamp'] = datetime.now().isoformat()
     chosen['alert_id']  = uuid.uuid4().hex[:8]
     return jsonify({'status': 'success', 'alert': chosen})
+
+
+# ─── Guardian — Guardião da Linha do Tempo ───────────────────────────────────
+
+@app.route('/api/guardian/register', methods=['POST'])
+def guardian_register():
+    """Registra um evento de commit no banco de dados do Guardian."""
+    data = request.get_json(force=True, silent=True) or {}
+
+    # Forward to Next.js dashboard if URL configured
+    dashboard_url = os.getenv('DASHBOARD_URL', 'http://localhost:3000')
+    try:
+        import requests as _req
+        _req.post(
+            f'{dashboard_url}/api/guardian/event',
+            json={**data, 'source': 'flask'},
+            timeout=3
+        )
+    except Exception:
+        pass  # Fire and forget — never fail the main flow
+
+    return jsonify({'status': 'success', 'message': 'Evento registrado'})
+
+
+@app.route('/api/guardian/status')
+def guardian_status():
+    """Status simplificado do Guardian baseado nos jobs ativos e histórico."""
+    current_year = datetime.now().year
+    all_jobs = list(active_jobs.values())
+
+    # Load history
+    persist_path = app.config['JOBS_PERSIST_FILE']
+    if os.path.exists(persist_path):
+        try:
+            with open(persist_path) as f:
+                all_jobs = all_jobs + json.load(f)[:50]
+        except Exception:
+            pass
+
+    nexus_count   = sum(1 for j in all_jobs if j.get('year', 0) > current_year)
+    branch_count  = sum(1 for j in all_jobs if j.get('branch', '') not in ('main', 'master', ''))
+    total_commits = sum(j.get('commits_made', 0) for j in all_jobs)
+
+    health = max(0, min(100, 100 - nexus_count * 15 - branch_count * 5))
+    threat = 'critical' if nexus_count > 3 else 'red' if nexus_count > 0 else 'yellow' if branch_count > 3 else 'green'
+
+    return jsonify({
+        'status':          'success',
+        'timeline_health': health,
+        'threat_level':    threat,
+        'nexus_count':     nexus_count,
+        'branch_count':    branch_count,
+        'total_jobs':      len(all_jobs),
+        'total_commits':   total_commits,
+        'active_jobs':     len(active_jobs),
+    })
 
 
 @app.errorhandler(404)

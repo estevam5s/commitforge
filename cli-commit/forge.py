@@ -821,6 +821,33 @@ def commit(repo, year, start_date, end_date, dias, modo, branch,
             success(f'{commits_made} commits criados no branch {branch}')
             out('[dim]Para ver no gráfico: o e-mail do autor deve ser verificado na conta GitHub.[/dim]')
 
+        # ── Notificar Guardian da AVT ────────────────────────────────────
+        if commits_made and HAS_REQUESTS:
+            try:
+                _dashboard_url = os.getenv('DASHBOARD_URL', 'http://localhost:3000')
+                _flask_url     = os.getenv('FLASK_URL', 'http://localhost:5001')
+                _payload = {
+                    'operator':      repo.split('/')[-2] if '/' in repo else 'anonymous',
+                    'repo_name':     repo.rstrip('/').split('/')[-1].replace('.git', '') if repo else None,
+                    'repo_url':      repo,
+                    'commit_year':   start_dt.year,
+                    'commits_count': commits_made,
+                    'branch_name':   branch,
+                    'mode':          modo,
+                    'source':        'cli',
+                }
+                _sent = False
+                for _url in [f'{_flask_url}/api/guardian/register', f'{_dashboard_url}/api/guardian/event']:
+                    try:
+                        _resp = _requests.post(_url, json=_payload, timeout=2)
+                        if _resp.status_code < 300:
+                            _sent = True
+                            break
+                    except Exception:
+                        pass
+            except Exception:
+                pass
+
         # Salvar no histórico
         _save_history({
             'ts':      datetime.now().isoformat(),

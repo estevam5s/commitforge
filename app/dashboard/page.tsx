@@ -14,6 +14,41 @@ interface StatsData {
   improvements: { id: string; title: string; description: string | null; priority: string; status: string; author: string | null; version_target: string | null; tags: string[] }[]
 }
 
+interface TimelineEvent {
+  id: string
+  created_at: string
+  operator: string
+  repo_name: string | null
+  repo_url: string | null
+  commit_year: number
+  commits_count: number
+  branch_name: string | null
+  mode: string | null
+  timeline_type: 'sacred' | 'branched' | 'nexus' | 'pruned'
+  nexus_level: number
+  is_future: boolean
+  is_deep_past: boolean
+  status: 'active' | 'pruned' | 'monitored' | 'warning'
+  source: string
+}
+
+interface GuardianData {
+  events: TimelineEvent[]
+  timeline_health: number
+  threat_level: 'green' | 'yellow' | 'red' | 'critical'
+  total_events: number
+  nexus_count: number
+  branch_count: number
+  pruned_count: number
+  future_count: number
+  deep_past_count: number
+  cli_count: number
+  flask_count: number
+  timeline_chart: { year: number; count: number; isFuture: boolean }[]
+  current_year: number
+  prunes: { id: string; created_at: string; event_id: string; action: string; reason: string | null; guardian: string }[]
+}
+
 const PLATFORM_COLORS: Record<string, string> = { linux: "#00ff88", macos: "#a78bfa", windows: "#60a5fa", docker: "#38bdf8", arch: "#1d4ed8", debian: "#dc2626", ubuntu: "#f97316", fedora: "#06b6d4", other: "#6b7280" }
 const METHOD_COLORS: Record<string, string>   = { curl: "#f5a623", docker: "#38bdf8", brew: "#a78bfa", apt: "#f87171", pacman: "#60a5fa", winget: "#34d399", powershell: "#22d3ee", pip: "#fb923c", git: "#a3e635", other: "#6b7280", unknown: "#6b7280" }
 
@@ -115,6 +150,514 @@ function AVTAlert({ agent, msg, icon, level, onDismiss }: { agent: string; msg: 
       </div>
       <p className="text-white/70 text-xs font-mono leading-relaxed italic">"{msg}"</p>
     </div>
+  )
+}
+
+function GuardianPanel() {
+  const [data, setData] = useState<GuardianData | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [pruneTarget, setPruneTarget] = useState<TimelineEvent | null>(null)
+  const [pruneAction, setPruneAction] = useState<"pruned" | "warned" | "monitored">("pruned")
+  const [pruneReason, setPruneReason] = useState("")
+  const [pruning, setPruning] = useState(false)
+  const [pruneSuccess, setPruneSuccess] = useState<string | null>(null)
+  const [activeTab, setActiveTab] = useState<"stream" | "timeline" | "nexus" | "log">("stream")
+  const [selectedEvent, setSelectedEvent] = useState<TimelineEvent | null>(null)
+
+  const fetchGuardian = useCallback(async () => {
+    setLoading(true)
+    try {
+      const res = await fetch("/api/guardian")
+      const json = await res.json()
+      if (!json.error) setData(json)
+    } catch { /* keep old */ } finally { setLoading(false) }
+  }, [])
+
+  useEffect(() => {
+    fetchGuardian()
+    const t = setInterval(fetchGuardian, 12000)
+    return () => clearInterval(t)
+  }, [fetchGuardian])
+
+  const doPrune = async () => {
+    if (!pruneTarget) return
+    setPruning(true)
+    try {
+      const res = await fetch("/api/guardian/prune", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ event_id: pruneTarget.id, action: pruneAction, reason: pruneReason, guardian: "Guardião AVT" }),
+      })
+      const json = await res.json()
+      if (json.ok) {
+        setPruneSuccess(`Evento ${pruneAction === "pruned" ? "podado" : pruneAction === "warned" ? "alertado" : "monitorado"} com sucesso.`)
+        setPruneTarget(null)
+        setPruneReason("")
+        setTimeout(() => { setPruneSuccess(null); fetchGuardian() }, 2500)
+      }
+    } catch { /* ignore */ } finally { setPruning(false) }
+  }
+
+  // Timeline SVG visualization
+  const TimelineSVG = () => {
+    if (!data) return null
+    const years = Array.from({ length: 16 }, (_, i) => 2015 + i) // 2015-2030
+    const W = 700, H = 120, PAD = 40
+    const yearX = (y: number) => PAD + ((y - 2015) / 15) * (W - PAD * 2)
+    const cy = 70
+
+    const eventsByYear: Record<number, TimelineEvent[]> = {}
+    ;(data.events ?? []).forEach(e => {
+      if (e.commit_year >= 2015 && e.commit_year <= 2030) {
+        if (!eventsByYear[e.commit_year]) eventsByYear[e.commit_year] = []
+        eventsByYear[e.commit_year].push(e)
+      }
+    })
+
+    const typeColor = (t: string) =>
+      t === "nexus" ? "#ff4040" : t === "branched" ? "#f5a623" : t === "pruned" ? "#444" : "#00ff88"
+
+    return (
+      <svg viewBox={`0 0 ${W} ${H}`} className="w-full" style={{ maxHeight: 120 }}>
+        <defs>
+          <filter id="glow-sacred-g"><feDropShadow dx="0" dy="0" stdDeviation="3" floodColor="#00ff88" floodOpacity="0.6"/></filter>
+          <filter id="glow-nexus-g"><feDropShadow dx="0" dy="0" stdDeviation="4" floodColor="#ff4040" floodOpacity="0.8"/></filter>
+          <filter id="glow-branch-g"><feDropShadow dx="0" dy="0" stdDeviation="3" floodColor="#f5a623" floodOpacity="0.7"/></filter>
+        </defs>
+        {/* Future zone */}
+        <rect x={yearX(new Date().getFullYear())} y={0} width={W - yearX(new Date().getFullYear())} height={H} fill="rgba(255,64,64,0.04)"/>
+        {/* Sacred timeline main line */}
+        <line x1={PAD} y1={cy} x2={W - PAD} y2={cy} stroke="#00ff88" strokeWidth="1.5" opacity="0.25" filter="url(#glow-sacred-g)"/>
+        {/* Current year marker */}
+        <line x1={yearX(new Date().getFullYear())} y1={10} x2={yearX(new Date().getFullYear())} y2={H - 10} stroke="#f5a623" strokeWidth="1" strokeDasharray="3,3" opacity="0.5"/>
+        <text x={yearX(new Date().getFullYear()) + 3} y={18} fill="#f5a623" fontSize="7" fontFamily="monospace" opacity="0.7">HOJE</text>
+        {/* Year ticks */}
+        {years.filter((_, i) => i % 3 === 0).map(y => (
+          <g key={y}>
+            <line x1={yearX(y)} y1={cy - 4} x2={yearX(y)} y2={cy + 4} stroke="rgba(255,255,255,0.15)" strokeWidth="1"/>
+            <text x={yearX(y)} y={cy + 14} textAnchor="middle" fill="rgba(255,255,255,0.2)" fontSize="7" fontFamily="monospace">{y}</text>
+          </g>
+        ))}
+        {/* Branch arcs */}
+        {Object.entries(eventsByYear).map(([yr, evts]) => {
+          const x = yearX(parseInt(yr))
+          const hasBranch = evts.some(e => e.timeline_type === "branched" || e.timeline_type === "nexus")
+          if (!hasBranch) return null
+          const maxNexus = evts.reduce((m, e) => Math.max(m, e.nexus_level), 0)
+          const lift = 20 + maxNexus * 3
+          const col = evts.some(e => e.timeline_type === "nexus") ? "#ff4040" : "#f5a623"
+          return (
+            <path key={yr} d={`M${x},${cy} C${x},${cy - lift} ${x + 30},${cy - lift} ${x + 30},${cy}`}
+              fill="none" stroke={col} strokeWidth="1" opacity="0.5"
+              filter={col === "#ff4040" ? "url(#glow-nexus-g)" : "url(#glow-branch-g)"}/>
+          )
+        })}
+        {/* Commit nodes */}
+        {Object.entries(eventsByYear).map(([yr, evts]) => {
+          const x = yearX(parseInt(yr))
+          const topType = evts.find(e => e.timeline_type === "nexus")?.timeline_type
+            ?? evts.find(e => e.timeline_type === "branched")?.timeline_type
+            ?? "sacred"
+          const col = typeColor(topType)
+          const r = Math.min(8, 3 + Math.log2(evts.reduce((s, e) => s + e.commits_count, 0) + 1))
+          const flt = topType === "nexus" ? "url(#glow-nexus-g)" : topType === "branched" ? "url(#glow-branch-g)" : "url(#glow-sacred-g)"
+          return (
+            <g key={yr}>
+              <circle cx={x} cy={cy} r={r + 3} fill={col} opacity="0.1"/>
+              <circle cx={x} cy={cy} r={r} fill={col} opacity="0.85" filter={flt}/>
+              <text x={x} y={cy - r - 4} textAnchor="middle" fill={col} fontSize="7" fontFamily="monospace" opacity="0.8">{evts.length}</text>
+            </g>
+          )
+        })}
+      </svg>
+    )
+  }
+
+  const threatColors = {
+    green:    { text: "text-[#00ff88]", border: "border-[#00ff88]", bg: "bg-[#00ff88]/10", label: "LINHA SAGRADA ESTÁVEL" },
+    yellow:   { text: "text-[#f5a623]", border: "border-[#f5a623]", bg: "bg-[#f5a623]/10", label: "RAMIFICAÇÕES DETECTADAS" },
+    red:      { text: "text-[#ff8c00]", border: "border-[#ff8c00]", bg: "bg-[#ff8c00]/10", label: "EVENTOS NEXUS ATIVOS" },
+    critical: { text: "text-[#ff4040]", border: "border-[#ff4040]", bg: "bg-[#ff4040]/10", label: "CRISE TEMPORAL CRÍTICA" },
+  }
+  const tc = data ? (threatColors[data.threat_level] ?? threatColors.green) : threatColors.green
+
+  const typeLabel: Record<string, string> = { sacred: "Sagrado", branched: "Ramificado", nexus: "Nexus", pruned: "Podado" }
+  const typeBadgeColor: Record<string, string> = {
+    sacred:   "border-[#00ff88]/40 text-[#00ff88]",
+    branched: "border-[#f5a623]/40 text-[#f5a623]",
+    nexus:    "border-[#ff4040]/50 text-[#ff4040]",
+    pruned:   "border-white/10 text-white/25",
+  }
+  const sourceLabel: Record<string, string> = { cli: "CLI", flask: "Flask", api: "API", manual: "Manual" }
+
+  return (
+    <section className="relative border border-[#ff4040]/20 bg-[#ff4040]/[0.02] rounded-sm overflow-hidden">
+      {/* Corner decorations */}
+      <span className="absolute top-0 left-0 w-5 h-5 border-t-2 border-l-2 border-[#ff4040]/40" />
+      <span className="absolute top-0 right-0 w-5 h-5 border-t-2 border-r-2 border-[#ff4040]/40" />
+      <span className="absolute bottom-0 left-0 w-5 h-5 border-b-2 border-l-2 border-[#ff4040]/40" />
+      <span className="absolute bottom-0 right-0 w-5 h-5 border-b-2 border-r-2 border-[#ff4040]/40" />
+
+      {/* Header */}
+      <div className={`border-b border-[#ff4040]/15 p-5 ${tc.bg}`}>
+        <div className="flex items-center justify-between flex-wrap gap-4">
+          <div>
+            <div className="flex items-center gap-3 mb-1">
+              <span className="text-2xl">🏛️</span>
+              <span className={`text-xl font-black tracking-[0.3em] font-mono ${tc.text}`}
+                style={{ textShadow: `0 0 30px currentColor` }}>
+                GUARDIÃO DA LINHA DO TEMPO
+              </span>
+              <PulsingDot color={data?.threat_level === "green" ? "#00ff88" : data?.threat_level === "yellow" ? "#f5a623" : "#ff4040"} />
+            </div>
+            <p className={`text-xs tracking-widest font-mono ${tc.text} opacity-70`}>{tc.label}</p>
+          </div>
+          <div className="flex items-center gap-3">
+            <button onClick={fetchGuardian} disabled={loading}
+              className="flex items-center gap-1.5 border border-[#ff4040]/30 hover:border-[#ff4040]/70 text-[#ff4040]/60 hover:text-[#ff4040] px-4 py-2 text-[10px] tracking-widest transition-all disabled:opacity-40">
+              <RefreshCw className={`w-3 h-3 ${loading ? "animate-spin" : ""}`} />
+              SINCRONIZAR
+            </button>
+          </div>
+        </div>
+
+        {/* Health bar */}
+        <div className="mt-4">
+          <div className="flex items-center justify-between mb-1">
+            <span className="text-white/30 text-[10px] tracking-widest font-mono">INTEGRIDADE DA LINHA DO TEMPO SAGRADA</span>
+            <span className={`text-sm font-bold font-mono ${tc.text}`}>{loading ? "···" : `${data?.timeline_health ?? 0}%`}</span>
+          </div>
+          <div className="h-2 bg-white/5 rounded-full overflow-hidden border border-white/5">
+            <div
+              className="h-full transition-all duration-1000"
+              style={{
+                width: `${data?.timeline_health ?? 0}%`,
+                background: `linear-gradient(90deg, ${
+                  (data?.timeline_health ?? 0) > 70 ? "#00ff88" :
+                  (data?.timeline_health ?? 0) > 40 ? "#f5a623" : "#ff4040"
+                }, ${
+                  (data?.timeline_health ?? 0) > 70 ? "#00cc66" :
+                  (data?.timeline_health ?? 0) > 40 ? "#ff8c00" : "#cc0000"
+                })`,
+                boxShadow: `0 0 10px ${(data?.timeline_health ?? 0) > 70 ? "#00ff88" : (data?.timeline_health ?? 0) > 40 ? "#f5a623" : "#ff4040"}`,
+              }}
+            />
+          </div>
+        </div>
+
+        {/* Quick stats */}
+        <div className="grid grid-cols-4 sm:grid-cols-7 gap-3 mt-4">
+          {[
+            { label: "Total",    value: data?.total_events   ?? 0, color: "text-white/50" },
+            { label: "Sagrados", value: data ? (data.total_events - data.nexus_count - data.branch_count - data.pruned_count) : 0, color: "text-[#00ff88]" },
+            { label: "Ramos",    value: data?.branch_count   ?? 0, color: "text-[#f5a623]" },
+            { label: "Nexus",    value: data?.nexus_count    ?? 0, color: "text-[#ff4040]" },
+            { label: "Podados",  value: data?.pruned_count   ?? 0, color: "text-white/25" },
+            { label: "CLI",      value: data?.cli_count      ?? 0, color: "text-[#a78bfa]" },
+            { label: "Flask",    value: data?.flask_count    ?? 0, color: "text-[#38bdf8]" },
+          ].map(s => (
+            <div key={s.label} className="text-center">
+              <p className={`text-lg font-bold font-mono ${s.color}`}>{loading ? "·" : s.value}</p>
+              <p className="text-white/20 text-[10px] tracking-widest">{s.label.toUpperCase()}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div className="p-5 space-y-5">
+
+        {/* Timeline SVG */}
+        <div className="border border-white/5 bg-black/30 p-4 rounded-sm">
+          <p className="text-white/20 text-[10px] tracking-widest mb-3 font-mono">◈ MAPA TEMPORAL — 2015 ATÉ 2030</p>
+          <TimelineSVG />
+          <div className="flex items-center gap-4 mt-2 justify-center">
+            {[
+              { color: "#00ff88", label: "Sagrado" },
+              { color: "#f5a623", label: "Ramificado" },
+              { color: "#ff4040", label: "Nexus" },
+              { color: "#444",    label: "Podado" },
+            ].map(l => (
+              <div key={l.label} className="flex items-center gap-1">
+                <div className="w-2 h-2 rounded-full" style={{ background: l.color, boxShadow: `0 0 4px ${l.color}` }}/>
+                <span className="text-white/30 text-[10px] font-mono">{l.label}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Prune success notification */}
+        {pruneSuccess && (
+          <div className="border border-[#00ff88]/30 bg-[#00ff88]/5 p-3 text-[#00ff88] text-xs font-mono tracking-widest flex items-center gap-2">
+            <PulsingDot color="#00ff88" /> {pruneSuccess}
+          </div>
+        )}
+
+        {/* Tabs */}
+        <div className="flex gap-0 border-b border-white/5">
+          {(["stream","timeline","nexus","log"] as const).map(tab => (
+            <button key={tab} onClick={() => setActiveTab(tab)}
+              className={`px-4 py-2 text-[10px] tracking-widest font-mono border-b-2 transition-colors ${
+                activeTab === tab
+                  ? "border-[#ff4040] text-[#ff4040]"
+                  : "border-transparent text-white/25 hover:text-white/50"
+              }`}>
+              {tab === "stream" ? "STREAM AO VIVO" :
+               tab === "timeline" ? "GRÁFICO TEMPORAL" :
+               tab === "nexus" ? `NEXUS EVENTS ${(data?.nexus_count ?? 0) > 0 ? `(${data?.nexus_count})` : ""}` :
+               "LOG DO GUARDIÃO"}
+            </button>
+          ))}
+        </div>
+
+        {/* Tab: Stream */}
+        {activeTab === "stream" && (
+          <div className="space-y-1.5 max-h-80 overflow-y-auto pr-1">
+            {loading ? (
+              <div className="flex items-center justify-center h-20"><div className="w-4 h-4 border border-[#ff4040] border-t-transparent rounded-full animate-spin" /></div>
+            ) : !(data?.events ?? []).filter(e => e.status !== "pruned").length ? (
+              <p className="text-white/20 text-xs text-center py-8 tracking-widest font-mono">— NENHUM EVENTO ATIVO —</p>
+            ) : (
+              (data?.events ?? []).filter(e => e.status !== "pruned").slice(0, 30).map(e => (
+                <div
+                  key={e.id}
+                  onClick={() => setSelectedEvent(selectedEvent?.id === e.id ? null : e)}
+                  className={`border transition-all cursor-pointer p-3 ${
+                    e.timeline_type === "nexus"    ? "border-[#ff4040]/25 hover:border-[#ff4040]/60 hover:bg-[#ff4040]/5" :
+                    e.timeline_type === "branched" ? "border-[#f5a623]/20 hover:border-[#f5a623]/50 hover:bg-[#f5a623]/5" :
+                    "border-white/5 hover:border-[#00ff88]/20 hover:bg-[#00ff88]/5"
+                  }`}
+                >
+                  <div className="flex items-center gap-3 flex-wrap">
+                    <span className="text-lg">
+                      {e.timeline_type === "nexus" ? "⚡" : e.timeline_type === "branched" ? "🌿" : e.is_future ? "🔮" : "◈"}
+                    </span>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="text-white/70 text-xs font-mono font-semibold">{e.operator}</span>
+                        <span className="text-white/30 text-[10px]">→</span>
+                        <span className="text-white/50 text-xs font-mono truncate max-w-32">{e.repo_name ?? "repo desconhecido"}</span>
+                        <span className={`inline-flex items-center border rounded px-2 py-0.5 text-[10px] font-mono ${typeBadgeColor[e.timeline_type] ?? "border-white/10 text-white/30"}`}>
+                          {typeLabel[e.timeline_type] ?? e.timeline_type}
+                        </span>
+                        {e.is_future && <span className="text-[#ff4040] text-[10px] font-mono border border-[#ff4040]/40 px-1.5 py-0.5">FUTURO</span>}
+                        {e.status === "monitored" && <span className="text-[#f5a623] text-[10px] font-mono border border-[#f5a623]/40 px-1.5 py-0.5">MONIT.</span>}
+                        {e.status === "warning" && <span className="text-[#ff8c00] text-[10px] font-mono border border-[#ff8c00]/40 px-1.5 py-0.5">ALERTA</span>}
+                      </div>
+                      <div className="flex items-center gap-3 mt-1 text-[10px] text-white/25 font-mono">
+                        <span>ano: {e.commit_year}</span>
+                        <span>{e.commits_count} commits</span>
+                        <span>{sourceLabel[e.source] ?? e.source}</span>
+                        <span>{new Date(e.created_at).toLocaleString("pt-BR")}</span>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-1.5 flex-shrink-0">
+                      {e.nexus_level > 0 && (
+                        <div className="flex items-center gap-0.5">
+                          {Array.from({ length: Math.min(e.nexus_level, 5) }).map((_, i) => (
+                            <div key={i} className="w-1 h-3 rounded-full" style={{ background: `rgba(255,64,64,${0.3 + i * 0.14})` }}/>
+                          ))}
+                        </div>
+                      )}
+                      <button
+                        onClick={ev => { ev.stopPropagation(); setPruneTarget(e); setPruneAction("pruned") }}
+                        className="border border-[#ff4040]/20 hover:border-[#ff4040]/60 text-[#ff4040]/40 hover:text-[#ff4040] px-2 py-1 text-[10px] tracking-widest transition-all"
+                      >
+                        PODAR
+                      </button>
+                      <button
+                        onClick={ev => { ev.stopPropagation(); setPruneTarget(e); setPruneAction("monitored") }}
+                        className="border border-[#f5a623]/20 hover:border-[#f5a623]/60 text-[#f5a623]/40 hover:text-[#f5a623] px-2 py-1 text-[10px] tracking-widest transition-all"
+                      >
+                        MONIT.
+                      </button>
+                    </div>
+                  </div>
+                  {selectedEvent?.id === e.id && (
+                    <div className="mt-3 pt-3 border-t border-white/5 grid grid-cols-2 sm:grid-cols-3 gap-2 text-[10px] font-mono">
+                      {[
+                        { k: "ID",         v: e.id.slice(0, 8) + "..." },
+                        { k: "Operador",   v: e.operator },
+                        { k: "Repo",       v: e.repo_name ?? "—" },
+                        { k: "Ano Alvo",   v: String(e.commit_year) },
+                        { k: "Commits",    v: String(e.commits_count) },
+                        { k: "Branch",     v: e.branch_name ?? "—" },
+                        { k: "Modo",       v: e.mode ?? "—" },
+                        { k: "Nível Nexus",v: String(e.nexus_level) + "/10" },
+                        { k: "Origem",     v: sourceLabel[e.source] ?? e.source },
+                      ].map(row => (
+                        <div key={row.k}>
+                          <p className="text-white/20 tracking-widest">{row.k.toUpperCase()}</p>
+                          <p className="text-white/60">{row.v}</p>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              ))
+            )}
+          </div>
+        )}
+
+        {/* Tab: Timeline chart */}
+        {activeTab === "timeline" && (
+          <div>
+            {loading || !data?.timeline_chart.length ? (
+              <p className="text-white/20 text-xs text-center py-8 tracking-widest font-mono">— SEM DADOS TEMPORAIS —</p>
+            ) : (
+              <div className="space-y-2">
+                <p className="text-white/20 text-[10px] tracking-widest font-mono mb-4">COMMITS POR ANO — TODOS OS OPERADORES</p>
+                {data.timeline_chart.map(row => {
+                  const maxVal = Math.max(...data.timeline_chart.map(r => r.count))
+                  const pct = maxVal > 0 ? (row.count / maxVal) * 100 : 0
+                  const color = row.isFuture ? "#ff4040" :
+                    row.year < new Date().getFullYear() - 2 ? "#f5a623" : "#00ff88"
+                  return (
+                    <div key={row.year} className="flex items-center gap-3">
+                      <span className={`text-xs font-mono w-12 ${row.isFuture ? "text-[#ff4040]" : "text-white/40"}`}>{row.year}</span>
+                      <div className="flex-1 h-5 bg-white/5 rounded-sm overflow-hidden">
+                        <div
+                          className="h-full transition-all duration-700"
+                          style={{ width: `${pct}%`, background: color, opacity: 0.7, boxShadow: `0 0 6px ${color}` }}
+                        />
+                      </div>
+                      <span className="text-xs font-mono w-12 text-right" style={{ color }}>{row.count}</span>
+                      {row.isFuture && <span className="text-[#ff4040] text-[10px] font-mono">⚡ NEXUS</span>}
+                    </div>
+                  )
+                })}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Tab: Nexus Events */}
+        {activeTab === "nexus" && (
+          <div className="space-y-3">
+            {loading ? (
+              <div className="flex items-center justify-center h-20"><div className="w-4 h-4 border border-[#ff4040] border-t-transparent rounded-full animate-spin" /></div>
+            ) : !(data?.events ?? []).filter(e => e.timeline_type === "nexus").length ? (
+              <div className="text-center py-8">
+                <p className="text-[#00ff88] text-sm font-mono mb-1">✓ LINHA DO TEMPO ESTÁVEL</p>
+                <p className="text-white/20 text-xs font-mono tracking-widest">Nenhum Evento Nexus ativo. Mobius aprova.</p>
+              </div>
+            ) : (
+              (data?.events ?? []).filter(e => e.timeline_type === "nexus").map(e => (
+                <div key={e.id} className="border border-[#ff4040]/30 bg-[#ff4040]/5 p-4 relative overflow-hidden">
+                  <div className="absolute top-0 right-0 text-[80px] opacity-5 font-black text-[#ff4040] leading-none pointer-events-none select-none">⚡</div>
+                  <div className="flex items-start justify-between gap-4 flex-wrap">
+                    <div>
+                      <div className="flex items-center gap-2 mb-2">
+                        <span className="text-[#ff4040] text-lg">⚡</span>
+                        <span className="text-[#ff4040] font-mono font-bold text-sm">NEXUS EVENT</span>
+                        <span className="border border-[#ff4040]/40 text-[#ff4040] text-[10px] font-mono px-2 py-0.5">NÍVEL {e.nexus_level}/10</span>
+                        {e.is_future && <span className="border border-[#ff4040]/60 text-[#ff4040] text-[10px] font-mono px-2 py-0.5 animate-pulse">⚠ FUTURO</span>}
+                      </div>
+                      <p className="text-white/70 text-xs font-mono">
+                        <span className="text-white/40">Operador:</span> {e.operator} &nbsp;·&nbsp;
+                        <span className="text-white/40">Repo:</span> {e.repo_name ?? "desconhecido"} &nbsp;·&nbsp;
+                        <span className="text-white/40">Ano:</span> {e.commit_year} &nbsp;·&nbsp;
+                        <span className="text-white/40">Commits:</span> {e.commits_count}
+                      </p>
+                      <p className="text-white/30 text-[10px] font-mono mt-1">
+                        Detectado: {new Date(e.created_at).toLocaleString("pt-BR")} · Origem: {sourceLabel[e.source] ?? e.source}
+                      </p>
+                    </div>
+                    <div className="flex flex-col gap-2">
+                      <button
+                        onClick={() => { setPruneTarget(e); setPruneAction("pruned") }}
+                        className="border border-[#ff4040]/50 hover:border-[#ff4040] bg-[#ff4040]/10 hover:bg-[#ff4040]/20 text-[#ff4040] px-4 py-2 text-[10px] tracking-widest font-mono transition-all"
+                      >
+                        ✂ PODAR EVENTO
+                      </button>
+                      <button
+                        onClick={() => { setPruneTarget(e); setPruneAction("monitored") }}
+                        className="border border-[#f5a623]/30 hover:border-[#f5a623] text-[#f5a623]/60 hover:text-[#f5a623] px-4 py-2 text-[10px] tracking-widest font-mono transition-all"
+                      >
+                        👁 MONITORAR
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        )}
+
+        {/* Tab: Guardian Log */}
+        {activeTab === "log" && (
+          <div className="space-y-1.5 max-h-72 overflow-y-auto pr-1">
+            {loading ? (
+              <div className="flex items-center justify-center h-20"><div className="w-4 h-4 border border-[#ff4040] border-t-transparent rounded-full animate-spin" /></div>
+            ) : !(data?.prunes ?? []).length ? (
+              <p className="text-white/20 text-xs text-center py-8 tracking-widest font-mono">— SEM AÇÕES DO GUARDIÃO —</p>
+            ) : (
+              (data?.prunes ?? []).map(p => (
+                <div key={p.id} className="border border-white/5 p-3 text-xs font-mono">
+                  <div className="flex items-center gap-3 flex-wrap">
+                    <span className="text-white/25 text-[10px]">{new Date(p.created_at).toLocaleString("pt-BR")}</span>
+                    <span className={`border px-2 py-0.5 text-[10px] ${
+                      p.action === "pruned" ? "border-[#ff4040]/40 text-[#ff4040]" :
+                      p.action === "warned" ? "border-[#ff8c00]/40 text-[#ff8c00]" :
+                      p.action === "escalated" ? "border-[#a78bfa]/40 text-[#a78bfa]" :
+                      "border-[#f5a623]/40 text-[#f5a623]"
+                    }`}>{p.action.toUpperCase()}</span>
+                    <span className="text-white/50">{p.guardian}</span>
+                    {p.reason && <span className="text-white/30 italic">"{p.reason}"</span>}
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* Prune modal */}
+      {pruneTarget && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm">
+          <div className="relative border border-[#ff4040]/40 bg-[#040810] p-6 max-w-md w-full mx-4">
+            <span className="absolute top-0 left-0 w-4 h-4 border-t-2 border-l-2 border-[#ff4040]/60" />
+            <span className="absolute top-0 right-0 w-4 h-4 border-t-2 border-r-2 border-[#ff4040]/60" />
+            <span className="absolute bottom-0 left-0 w-4 h-4 border-b-2 border-l-2 border-[#ff4040]/60" />
+            <span className="absolute bottom-0 right-0 w-4 h-4 border-b-2 border-r-2 border-[#ff4040]/60" />
+            <h3 className="text-[#ff4040] font-mono font-bold tracking-widest mb-1">AÇÃO DO GUARDIÃO</h3>
+            <p className="text-white/30 text-xs font-mono mb-4 tracking-widest">
+              {pruneTarget.operator} · {pruneTarget.repo_name} · {pruneTarget.commit_year}
+            </p>
+            <div className="flex gap-2 mb-4">
+              {(["pruned","warned","monitored"] as const).map(a => (
+                <button key={a} onClick={() => setPruneAction(a)}
+                  className={`flex-1 py-2 text-[10px] tracking-widest font-mono border transition-all ${
+                    pruneAction === a
+                      ? a === "pruned" ? "border-[#ff4040] bg-[#ff4040]/20 text-[#ff4040]"
+                        : a === "warned" ? "border-[#ff8c00] bg-[#ff8c00]/20 text-[#ff8c00]"
+                        : "border-[#f5a623] bg-[#f5a623]/20 text-[#f5a623]"
+                      : "border-white/10 text-white/30 hover:border-white/30"
+                  }`}>
+                  {a === "pruned" ? "✂ PODAR" : a === "warned" ? "⚠ ALERTAR" : "👁 MONITORAR"}
+                </button>
+              ))}
+            </div>
+            <textarea
+              value={pruneReason}
+              onChange={e => setPruneReason(e.target.value)}
+              placeholder="Motivo (opcional)..."
+              rows={2}
+              className="w-full bg-black border border-white/10 focus:border-[#ff4040]/40 outline-none p-3 text-xs font-mono text-white/60 placeholder-white/15 resize-none mb-4 transition-colors"
+            />
+            <div className="flex gap-3">
+              <button onClick={() => setPruneTarget(null)}
+                className="flex-1 border border-white/10 text-white/30 py-2 text-xs tracking-widest font-mono hover:border-white/30 transition-colors">
+                CANCELAR
+              </button>
+              <button onClick={doPrune} disabled={pruning}
+                className="flex-1 border border-[#ff4040]/50 bg-[#ff4040]/15 hover:bg-[#ff4040]/30 text-[#ff4040] py-2 text-xs tracking-widest font-mono disabled:opacity-40 transition-all">
+                {pruning ? "EXECUTANDO..." : "CONFIRMAR"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </section>
   )
 }
 
@@ -669,6 +1212,9 @@ export default function DashboardPage() {
 
           </div>
         </section>
+
+        {/* ── Guardião AVT ──────────────────────────────────────── */}
+        <GuardianPanel />
 
         {/* ── Footer ────────────────────────────────────────────── */}
         <div className="border-t border-[#f5a623]/10 pt-4 flex items-center justify-between text-[10px] text-white/15 tracking-widest">

@@ -24,7 +24,7 @@ error()  { echo -e "${RED}✗${NC} $1"; exit 1; }
 
 echo -e "${BOLD}"
 echo "  ╔══════════════════════════════════╗"
-echo "  ║    CommitForge Installer v3.0    ║"
+echo "  ║    CommitForge Installer v1.0    ║"
 echo "  ╚══════════════════════════════════╝"
 echo -e "${NC}"
 
