@@ -1200,11 +1200,76 @@ def servidor(porta, host, debug, abrir, sem_avt):
     import subprocess
     import socket
 
-    app_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'app.py')
+    install_dir = os.path.dirname(os.path.abspath(__file__))
+    app_path    = os.path.join(install_dir, 'app.py')
+
+    # ── Auto-download servidor se não encontrado ─────────────────────
     if not os.path.exists(app_path):
-        error(f'app.py não encontrado em {os.path.dirname(app_path)}')
-        out('[dim]Certifique-se de que o CommitForge foi instalado corretamente.[/dim]')
-        sys.exit(1)
+        if not HAS_REQUESTS:
+            error('app.py não encontrado e requests não está disponível para baixar automaticamente.')
+            out('[dim]Instale manualmente: pip install requests[/dim]')
+            sys.exit(1)
+
+        if HAS_RICH:
+            console.print('[yellow]⬇ Servidor Flask não encontrado. Baixando da nuvem AVT...[/yellow]')
+        else:
+            print('Baixando servidor Flask...')
+
+        _branch = 'main'
+        _base   = f'https://raw.githubusercontent.com/estevam5s/commitforge/{_branch}/cli-commit'
+        try:
+            # app.py
+            r = _requests.get(f'{_base}/app.py', timeout=15)
+            r.raise_for_status()
+            with open(app_path, 'w', encoding='utf-8') as _f:
+                _f.write(r.text)
+
+            # templates/ e static/ via zip
+            import zipfile as _zf, io as _io
+            zr = _requests.get(
+                f'https://github.com/estevam5s/commitforge/archive/refs/heads/{_branch}.zip',
+                timeout=30
+            )
+            if zr.status_code == 200:
+                with _zf.ZipFile(_io.BytesIO(zr.content)) as zf:
+                    prefix = f'commitforge-{_branch}/cli-commit/'
+                    for member in zf.namelist():
+                        for folder in ('templates/', 'static/'):
+                            if member.startswith(prefix + folder) and not member.endswith('/'):
+                                rel  = member[len(prefix):]
+                                dest = os.path.join(install_dir, rel)
+                                os.makedirs(os.path.dirname(dest), exist_ok=True)
+                                with zf.open(member) as src, open(dest, 'wb') as dst:
+                                    dst.write(src.read())
+
+            if HAS_RICH:
+                console.print('[bold green]✓ Servidor baixado com sucesso.[/bold green]')
+        except Exception as _exc:
+            error(f'Falha ao baixar o servidor: {_exc}')
+            out('[dim]Verifique sua conexão ou execute: commitforge atualizar[/dim]')
+            sys.exit(1)
+
+    # ── Garantir que Flask está instalado no venv ────────────────────
+    venv_pip = os.path.join(install_dir, 'venv', 'bin', 'pip')
+    if not os.path.exists(venv_pip):
+        venv_pip = os.path.join(install_dir, 'venv', 'Scripts', 'pip.exe')
+    venv_python_check = os.path.join(install_dir, 'venv', 'bin', 'python')
+    if not os.path.exists(venv_python_check):
+        venv_python_check = os.path.join(install_dir, 'venv', 'Scripts', 'python.exe')
+    try:
+        _check = subprocess.run(
+            [venv_python_check, '-c', 'import flask'],
+            capture_output=True
+        )
+        if _check.returncode != 0 and os.path.exists(venv_pip):
+            if HAS_RICH:
+                console.print('[yellow]⬇ Flask não encontrado no venv. Instalando...[/yellow]')
+            subprocess.run(
+                [venv_pip, 'install', '--quiet', 'flask'],
+                check=True
+            )
+    except Exception:
+        pass
 
     # ── Verificar se a porta já está em uso ──────────────────────────
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as _s:

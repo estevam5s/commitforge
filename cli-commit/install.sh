@@ -61,7 +61,7 @@ source "$INSTALL_DIR/venv/bin/activate"
 # Install dependencies
 log "Instalando dependências..."
 pip install --quiet --upgrade pip
-pip install --quiet click gitpython rich requests python-dotenv
+pip install --quiet click gitpython rich requests python-dotenv flask
 
 # Download files
 log "Baixando forge.py..."
@@ -69,6 +69,29 @@ curl -fsSL "$RAW/forge.py" -o "$INSTALL_DIR/forge.py"
 
 log "Baixando cli.py..."
 curl -fsSL "$RAW/cli.py" -o "$INSTALL_DIR/cli.py" || true
+
+# Download servidor Flask (app.py + templates + static)
+log "Baixando servidor Flask (app.py, templates, static)..."
+curl -fsSL "$RAW/app.py" -o "$INSTALL_DIR/app.py" || warn "app.py não pôde ser baixado (será baixado automaticamente no primeiro uso)"
+
+# Download templates and static via zip
+log "Extraindo templates e arquivos estáticos..."
+TMP_ZIP=$(mktemp /tmp/commitforge_XXXXXX.zip)
+if curl -fsSL "https://github.com/estevam5s/commitforge/archive/refs/heads/main.zip" -o "$TMP_ZIP" 2>/dev/null; then
+    if command -v unzip &>/dev/null; then
+        unzip -q -o "$TMP_ZIP" \
+            "commitforge-main/cli-commit/templates/*" \
+            "commitforge-main/cli-commit/static/*" \
+            -d /tmp/commitforge_extract 2>/dev/null || true
+        if [ -d /tmp/commitforge_extract/commitforge-main/cli-commit/templates ]; then
+            cp -r /tmp/commitforge_extract/commitforge-main/cli-commit/templates "$INSTALL_DIR/"
+            cp -r /tmp/commitforge_extract/commitforge-main/cli-commit/static   "$INSTALL_DIR/"
+            success "templates/ e static/ instalados"
+        fi
+        rm -rf /tmp/commitforge_extract
+    fi
+    rm -f "$TMP_ZIP"
+fi
 
 # Create wrapper script
 log "Criando comando commitforge..."
