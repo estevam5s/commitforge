@@ -87,6 +87,8 @@ const NAV_ITEMS = [
   { id: "guardian-alerts",   label: "Central de Alertas",icon: "⚠",  group: "guardian" },
 ]
 
+const TIMELINE_HREF = "/dashboard/timeline"
+
 const SECTION_TITLES: Record<Section, string> = {
   overview: "Visão Geral",
   installs: "Instalações",
@@ -291,6 +293,13 @@ function Sidebar({ activeSection, onNavigate }: { activeSection: Section; onNavi
 
       {/* Footer */}
       <div className="p-4 border-t border-white/5 space-y-2">
+        <a
+          href={TIMELINE_HREF}
+          className="flex items-center gap-2 w-full border border-[#4aabff]/20 hover:border-[#4aabff]/50 text-[#4aabff]/50 hover:text-[#4aabff] px-3 py-2 text-[10px] tracking-widest font-mono transition-all rounded-sm"
+        >
+          <span className="text-sm">⟁</span>
+          <span>Linha do Tempo</span>
+        </a>
         <div className="flex items-center gap-2">
           <span className="border border-[#f5a623]/30 text-[#f5a623] text-[9px] font-mono px-2 py-0.5 tracking-widest">v1.0.0</span>
           <span className="text-white/20 text-[9px] tracking-widest">CommitForge</span>
