@@ -88,6 +88,70 @@ def api_get(endpoint, timeout=10):
     return r.json()
 
 
+# ── Integração SaaS (conta CommitForge na nuvem) ─────────────────────
+SAAS_URL = os.getenv('COMMITFORGE_SAAS_URL', 'https://commitforge.vercel.app')
+
+
+def _saas_config_path():
+    d = os.path.join(os.path.expanduser('~'), '.commitforge')
+    os.makedirs(d, exist_ok=True)
+    return os.path.join(d, 'config.json')
+
+
+def _saas_load():
+    try:
+        with open(_saas_config_path()) as f:
+            return json.load(f)
+    except Exception:
+        return {}
+
+
+def _saas_save(data):
+    with open(_saas_config_path(), 'w') as f:
+        json.dump(data, f, indent=2)
+    try:
+        os.chmod(_saas_config_path(), 0o600)
+    except Exception:
+        pass
+
+
+def _saas_post(path, payload, headers=None, timeout=30):
+    r = requests.post(f"{SAAS_URL}{path}", json=payload, headers=headers or {}, timeout=timeout)
+    return r.status_code, (r.json() if r.headers.get('content-type', '').startswith('application/json') else {})
+
+
+def _saas_token():
+    return _saas_load().get('token')
+
+
+def _saas_validate():
+    """Valida o token salvo e devolve plano/limites (ou None)."""
+    token = _saas_token()
+    if not token:
+        return None
+    try:
+        code, data = _saas_post('/api/cli/validate', {'token': token})
+        return data if code == 200 and data.get('valid') else None
+    except Exception:
+        return None
+
+
+def _saas_sync_job(repo_url, repo_name, branch, start_date, end_date, mode, commits_count, status='completed'):
+    """Envia o job concluído para o dashboard (respeita gating do plano)."""
+    token = _saas_token()
+    if not token:
+        return None
+    try:
+        code, data = _saas_post('/api/cli/jobs', {
+            'repo_url': repo_url, 'repo_name': repo_name, 'branch': branch,
+            'start_date': start_date, 'end_date': end_date, 'mode': mode,
+            'commits_count': commits_count, 'status': status,
+        }, headers={'x-cli-token': token})
+        return code, data
+    except Exception:
+        return None
+
+
 def print_banner():
     """Imprime o banner do CommitForge."""
     if RICH_AVAILABLE:
@@ -274,6 +338,20 @@ def commit(repo, year, start_date, end_date, dias, commits_per_day, message,
         out(f"[dim]  Ou diretamente: cd cli-commit && python app.py[/dim]")
         sys.exit(1)
 
+    # Conta SaaS (gating por plano)
+    saas = _saas_validate()
+    if saas:
+        out(f"[green]→[/green] Conta: [bold]{saas.get('user', {}).get('email', '')}[/bold] · plano [bold]{saas.get('plan_name')}[/bold]")
+        if not saas.get('has_access'):
+            out("[yellow]⚠ Seu período grátis terminou e o acesso está reduzido (nível Inicial).[/yellow]")
+            out("[dim]  Assine um plano em https://commitforge.vercel.app/dashboard/billing[/dim]")
+        limits = saas.get('limits', {})
+        if commit_mode == 'projeto' and limits.get('commits_month') != -1 and saas.get('plan') == 'inicial':
+            out("[bold red]✗ Modo projeto disponível a partir do plano Starter.[/bold red]")
+            sys.exit(1)
+    else:
+        out("[dim]→ Sem conta conectada (modo local). Use 'commitforge login' para sincronizar com o dashboard.[/dim]")
+
     # Modo de commit
     mode_label = "Projeto (arquivos reais)" if commit_mode == 'projeto' else "Arquivo (log único)"
     out(f"[green]→[/green] Modo de commit: [bold]{mode_label}[/bold]")
@@ -357,6 +435,18 @@ def commit(repo, year, start_date, end_date, dias, commits_per_day, message,
 
         if wait:
             _monitor_job(server, job_id)
+            # sincroniza o job com o dashboard SaaS (se logado)
+            if saas:
+                repo_name = repo.rstrip('/').split('/')[-1].replace('.git', '')
+                sync = _saas_sync_job(
+                    repo_url=repo, repo_name=repo_name, branch=branch_name or 'main',
+                    start_date=start_date, end_date=end_date, mode=commit_mode,
+                    commits_count=int(total) if 'total' in dir() else 0,
+                )
+                if sync and sync[0] == 402:
+                    out(f"[yellow]⚠ {sync[1].get('error', 'Limite do plano atingido')}[/yellow]")
+                elif sync and sync[0] == 200:
+                    out("[dim]→ Job sincronizado com o dashboard.[/dim]")
         else:
             out(f"[dim]→ Use 'commitforge status --job {job_id}' para acompanhar[/dim]")
 
@@ -642,6 +732,78 @@ def info():
     else:
         print(f"Versão: {VERSION}")
         print(f"Servidor: {'Rodando' if rodando else 'Parado'} — {server}")
+
+
+@cli.command()
+@click.option('--email', '-e', default=None, help='E-mail da sua conta CommitForge')
+@click.option('--senha', '--password', 'senha', default=None, help='Senha (será solicitada se omitida)')
+@click.option('--token', '-t', default=None, help='Autenticar direto com um token de CLI (cf_...)')
+@click.option('--nome', 'name', default='CLI', help='Nome para identificar este token')
+def login(email, senha, token, name):
+    """Conectar a CLI à sua conta CommitForge (login e senha ou token)."""
+    print_banner()
+    if token:
+        _saas_save({'token': token})
+        info = _saas_validate()
+        if not info:
+            out("[red]✗ Token inválido ou revogado.[/red]")
+            sys.exit(1)
+        out(f"[green]✓ Conectado![/green] Plano: [bold]{info.get('plan_name')}[/bold]")
+        return
+
+    if not email:
+        email = click.prompt('E-mail')
+    if not senha:
+        senha = click.prompt('Senha', hide_input=True)
+
+    out("[dim]→ Autenticando...[/dim]")
+    try:
+        code, data = _saas_post('/api/cli/auth', {'email': email, 'password': senha, 'name': name})
+    except Exception as e:
+        out(f"[red]✗ Não foi possível conectar ao servidor: {e}[/red]")
+        sys.exit(1)
+    if code != 200 or not data.get('ok'):
+        out(f"[red]✗ {data.get('error', 'Falha no login')}.[/red]")
+        sys.exit(1)
+    _saas_save({'token': data['token'], 'email': data['user']['email'], 'plan': data.get('plan')})
+    out(f"[green]✓ Conectado como {data['user']['email']}[/green]")
+    out(f"  Plano: [bold]{data.get('plan_name')}[/bold]")
+    if data.get('trial_active'):
+        out("  [yellow]Período de teste ativo (nível Pro).[/yellow]")
+    out(f"\n[dim]Token salvo em {_saas_config_path()}[/dim]")
+
+
+@cli.command()
+def logout():
+    """Desconectar a CLI da sua conta."""
+    try:
+        os.remove(_saas_config_path())
+        out("[green]✓ Desconectado.[/green]")
+    except FileNotFoundError:
+        out("[dim]Nenhuma sessão ativa.[/dim]")
+
+
+@cli.command()
+def conta():
+    """Mostrar a conta e o plano conectados."""
+    print_banner()
+    info = _saas_validate()
+    if not info:
+        out("[yellow]Nenhuma conta conectada.[/yellow] Use: [bold]commitforge login[/bold]")
+        return
+    limits = info.get('limits', {})
+    if RICH_AVAILABLE:
+        t = Table(show_header=False, box=box.SIMPLE, padding=(0, 2))
+        t.add_column(style="dim"); t.add_column()
+        t.add_row("E-mail:", info.get('user', {}).get('email', '—'))
+        t.add_row("Plano:", f"[bold]{info.get('plan_name')}[/bold]")
+        t.add_row("Acesso:", "[green]ativo[/green]" if info.get('has_access') else "[red]reduzido[/red]")
+        t.add_row("Repositórios:", "∞" if limits.get('repos') == -1 else str(limits.get('repos', '—')))
+        t.add_row("Commits/mês:", "∞" if limits.get('commits_month') == -1 else str(limits.get('commits_month', '—')))
+        console.print(Panel(t, title="[bold]Conta CommitForge[/bold]", border_style="green"))
+    else:
+        print(f"E-mail: {info.get('user', {}).get('email')}")
+        print(f"Plano: {info.get('plan_name')}")
 
 
 def main():

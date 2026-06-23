@@ -15,6 +15,8 @@ import {
   Clock,
 } from "lucide-react"
 
+import { HomePricing } from "@/components/saas/home-pricing"
+
 // TVA Background — dynamically imported to avoid SSR issues with Canvas
 const TvaBackground = dynamic(() => import("@/components/tva-background"), { ssr: false })
 
@@ -458,6 +460,7 @@ export default function CommitForgeLanding() {
             <button onClick={() => scrollTo("instalacao")} className="hover:text-white transition-colors">Instalação</button>
             <button onClick={() => scrollTo("modos")}      className="hover:text-white transition-colors">Modos</button>
             <button onClick={() => scrollTo("cli")}        className="hover:text-white transition-colors">CLI</button>
+            <button onClick={() => scrollTo("pricing")}    className="hover:text-white transition-colors">Preços</button>
             <a href="/docs"       className="hover:text-white transition-colors">Docs</a>
             <a href="/git"        className="hover:text-white transition-colors">Guia Git</a>
             <a href="/changelog"  className="hover:text-white transition-colors">Changelog</a>
@@ -474,6 +477,8 @@ export default function CommitForgeLanding() {
 
           {/* Right: version + pip install copy */}
           <div className="hidden md:flex items-center gap-3 shrink-0">
+            <a href="/login" className="text-sm text-gray-300 hover:text-white transition-colors">Entrar</a>
+            <a href="/login" className="px-3 py-1.5 rounded-md bg-green-500 hover:bg-green-400 text-black text-sm font-semibold transition-colors">Começar grátis</a>
             <span className="px-2 py-0.5 rounded border border-gray-700 text-gray-400 text-xs">v1.0.0</span>
             <div className="flex items-center gap-2 bg-gray-900 border border-gray-700 rounded px-3 py-1.5 text-xs text-gray-300">
               <span className="text-green-400">$</span>
@@ -1002,6 +1007,8 @@ commitforge servidor  # Iniciar interface web`,
       </section>
 
       {/* ─── Feedback Section ─── */}
+      <HomePricing />
+
       <FeedbackSection />
 
       {/* ─── Footer ─── */}

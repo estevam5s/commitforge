@@ -11,7 +11,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
       if (!data.session) {
-        router.replace("/login")
+        router.replace("/login?next=/dashboard/commits")
       } else {
         setReady(true)
       }
