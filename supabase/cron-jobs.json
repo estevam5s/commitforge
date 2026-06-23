@@ -1,0 +1,40 @@
+{
+  "comment": "Cron jobs (pg_cron) do CommitForge. {{LOG}} = tabela de log, {{PREFIX}} = prefixo. Aplicados via skill supabase-cron.",
+  "jobs": [
+    {
+      "num": 1,
+      "name": "heartbeat",
+      "schedule": "0 */6 * * *",
+      "description": "heartbeat de saúde do projeto a cada 6h",
+      "sql": "insert into {{LOG}}(num, job_name, description) values (1, '{{PREFIX}}heartbeat', 'heartbeat 6h')"
+    },
+    {
+      "num": 2,
+      "name": "trial_sweep",
+      "schedule": "0 3 * * *",
+      "description": "marca trials expirados como past_due (acesso reduzido ao Inicial)",
+      "sql": "update public.app_subscriptions set status = 'past_due', updated_at = now() where status = 'trialing' and plan_slug = 'inicial' and current_period_end is not null and current_period_end < now(); insert into {{LOG}}(num, job_name, description) values (2, '{{PREFIX}}trial_sweep', 'trials expirados marcados como past_due')"
+    },
+    {
+      "num": 3,
+      "name": "token_cleanup",
+      "schedule": "0 4 * * 1",
+      "description": "remove tokens de CLI revogados há mais de 30 dias",
+      "sql": "delete from public.cli_tokens where revoked = true and created_at < now() - interval '30 days'; insert into {{LOG}}(num, job_name, description) values (3, '{{PREFIX}}token_cleanup', 'tokens revogados antigos removidos')"
+    },
+    {
+      "num": 4,
+      "name": "events_prune",
+      "schedule": "0 5 1 * *",
+      "description": "remove eventos de pagamento com mais de 180 dias",
+      "sql": "delete from public.app_payment_events where created_at < now() - interval '180 days'; insert into {{LOG}}(num, job_name, description) values (4, '{{PREFIX}}events_prune', 'eventos de pagamento antigos removidos')"
+    },
+    {
+      "num": 5,
+      "name": "installs_rollup",
+      "schedule": "30 2 * * *",
+      "description": "registra total de instalações do dia anterior",
+      "sql": "insert into {{LOG}}(num, job_name, description) select 5, '{{PREFIX}}installs_rollup', 'installs 24h: ' || count(*) from public.installs where created_at >= now() - interval '24 hours'"
+    }
+  ]
+}
