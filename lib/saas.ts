@@ -41,14 +41,19 @@ export async function getAccessForUser(userId: string, email?: string | null) {
   const trialActive = !!trialEndsAt && new Date(trialEndsAt) > new Date()
   const paidActive = !!sub && sub.plan_slug !== "inicial" && ["active", "trialing"].includes(sub.status)
   // durante o trial o usuário tem acesso nível Pro
-  const effectiveSlug = admin ? "enterprise" : paidActive ? sub!.plan_slug : trialActive ? "pro" : sub?.plan_slug || "inicial"
-  const plan = (plans || []).find((p) => p.slug === effectiveSlug) || null
+  // Plano REAL exibido ao usuário (não infla para Pro durante o trial).
+  const realSlug = admin ? "enterprise" : (sub?.plan_slug || "inicial")
+  const plan = (plans || []).find((p) => p.slug === realSlug) || null
+  // Limites EFETIVOS: no trial o usuário tem acesso nível Pro, mas o plano continua "Inicial".
+  const effectiveSlug = admin ? "enterprise" : paidActive ? sub!.plan_slug : trialActive ? "pro" : realSlug
+  const effectivePlan = (plans || []).find((p) => p.slug === effectiveSlug) || null
   const hasAccess = admin || paidActive || trialActive
   return {
     userId, email: email ?? null, isAdmin: admin,
     subscription: sub ?? null, plan, plans: plans || [],
     trialActive, trialEndsAt, hasAccess,
-    limits: (plan?.limits ?? {}) as PlanLimits,
+    effectiveSlug,
+    limits: (effectivePlan?.limits ?? {}) as PlanLimits,
   }
 }
 

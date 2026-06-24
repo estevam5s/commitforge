@@ -18,6 +18,7 @@ export function DashNav() {
   const router = useRouter()
   const { user, isAdmin, sub } = useSaas()
   const planName = isAdmin ? "Admin" : sub?.plan?.name || "Inicial"
+  const showTrial = !isAdmin && sub?.trial_active
 
   return (
     <header className="sticky top-0 z-30 border-b border-white/5 bg-[#040810]/85 backdrop-blur">
@@ -50,7 +51,7 @@ export function DashNav() {
           )}
         </nav>
         <div className="hidden md:flex items-center gap-2 shrink-0">
-          <span className="text-[11px] px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-400">{planName}</span>
+          <span className="text-[11px] px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-400">{planName}{showTrial ? " · Teste Pro" : ""}</span>
           <span className="text-xs text-zinc-500 max-w-[160px] truncate">{user?.email}</span>
           <Link href="/" className="p-1.5 text-zinc-500 hover:text-white" title="Site"><Home className="size-4" /></Link>
           <button onClick={async () => { await supabase.auth.signOut(); router.replace("/") }} className="p-1.5 text-zinc-500 hover:text-red-400" title="Sair"><LogOut className="size-4" /></button>

@@ -58,11 +58,12 @@ export default function CommitsPage() {
           {[
             { label: "Commits este mês", value: `${commitsUsed}${commitsLimit === -1 ? "" : ` / ${fmtLimit(commitsLimit)}`}`, icon: GitCommit },
             { label: "Repositórios usados", value: `${reposUsed}${reposLimit === -1 ? "" : ` / ${fmtLimit(reposLimit)}`}`, icon: GitBranch },
-            { label: "Plano", value: isAdmin ? "Admin" : sub?.plan?.name || "Inicial", icon: Calendar },
+            { label: "Plano", value: isAdmin ? "Admin" : sub?.plan?.name || "Inicial", icon: Calendar, hint: !isAdmin && sub?.trial_active ? "Teste Pro ativo" : undefined },
           ].map((c) => (
             <div key={c.label} className="rounded-2xl border border-white/10 bg-white/[0.02] p-5">
               <div className="flex items-center gap-2 text-zinc-500 text-xs uppercase tracking-wide"><c.icon className="size-4" /> {c.label}</div>
               <p className="text-2xl font-semibold text-white mt-2">{c.value}</p>
+              {c.hint && <p className="text-xs text-amber-400 mt-1">{c.hint}</p>}
             </div>
           ))}
         </div>
