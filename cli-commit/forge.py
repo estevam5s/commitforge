@@ -738,6 +738,21 @@ def commit(repo, year, start_date, end_date, dias, modo, branch,
     if not no_banner:
         banner()
 
+    # ── Login obrigatório (conta CommitForge) ─────────────────────────
+    _acc = _saas_validate()
+    if not _acc:
+        error('Você precisa fazer login para usar a CLI.')
+        out('[dim]→ Faça login:   [bold]commitforge login --email seu@email.com[/bold][/dim]')
+        out('[dim]→ Não tem conta? Crie em https://commitforge.vercel.app/login[/dim]')
+        sys.exit(1)
+    out(f"[green]→[/green] Conta: [bold]{(_acc.get('user') or {}).get('email', '')}[/bold] · plano [bold]{_acc.get('plan_name')}[/bold]")
+    if not _acc.get('has_access'):
+        warn('Período grátis terminado — acesso reduzido. Assine em https://commitforge.vercel.app/dashboard/billing')
+    _acc_limits = _acc.get('limits', {})
+    if modo == 'projeto' and _acc.get('plan') == 'inicial' and not _acc.get('trial_active'):
+        error('Modo projeto disponível a partir do plano Starter. Faça upgrade no dashboard.')
+        sys.exit(1)
+
     # ── Modo interativo ───────────────────────────────────────────────
     if interativo:
         if not HAS_RICH:
@@ -889,6 +904,22 @@ def commit(repo, year, start_date, end_date, dias, modo, branch,
         else:
             success(f'{commits_made} commits criados no branch {branch}')
             out('[dim]Para ver no gráfico: o e-mail do autor deve ser verificado na conta GitHub.[/dim]')
+
+        # ── Sincroniza o job com o dashboard CommitForge ─────────────────
+        if commits_made:
+            _repo_name = repo.rstrip('/').split('/')[-1].replace('.git', '') if repo else None
+            try:
+                _sync = _saas_sync_job(
+                    repo_url=repo, repo_name=_repo_name, branch=branch,
+                    start_date=str(start_dt.date()), end_date=str(end_dt.date()),
+                    mode=modo, commits_count=commits_made,
+                )
+                if _sync and _sync[0] == 200:
+                    out('[dim]→ Job sincronizado com o dashboard.[/dim]')
+                elif _sync and _sync[0] == 402:
+                    warn(_sync[1].get('error', 'Limite do plano atingido'))
+            except Exception:
+                pass
 
         # ── Notificar Guardian da AVT ────────────────────────────────────
         if commits_made and HAS_REQUESTS:
