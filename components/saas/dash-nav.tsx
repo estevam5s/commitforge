@@ -4,10 +4,10 @@ import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
 import { supabase } from "@/lib/supabase"
 import { useSaas } from "@/hooks/use-saas"
-import { GitBranch, LayoutGrid, GitCommit, CreditCard, Terminal, Shield, LogOut, Home } from "lucide-react"
+import { GitBranch, Activity, GitCommit, CreditCard, Terminal, Shield, LogOut, Home } from "lucide-react"
 
+// itens visíveis para todos os usuários autenticados
 const ITEMS = [
-  { href: "/dashboard", label: "Visão geral", icon: LayoutGrid, exact: true },
   { href: "/dashboard/commits", label: "Meus commits", icon: GitCommit },
   { href: "/dashboard/cli", label: "CLI", icon: Terminal },
   { href: "/dashboard/billing", label: "Assinatura", icon: CreditCard },
@@ -37,10 +37,16 @@ export function DashNav() {
             )
           })}
           {isAdmin && (
-            <Link href="/dashboard/admin"
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm whitespace-nowrap transition ${pathname.startsWith("/dashboard/admin") ? "bg-amber-500/10 text-amber-400" : "text-amber-500/80 hover:text-amber-300 hover:bg-white/5"}`}>
-              <Shield className="size-4" /> Admin
-            </Link>
+            <>
+              <Link href="/dashboard"
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm whitespace-nowrap transition ${pathname === "/dashboard" ? "bg-amber-500/10 text-amber-400" : "text-amber-500/80 hover:text-amber-300 hover:bg-white/5"}`}>
+                <Activity className="size-4" /> AVT HQ
+              </Link>
+              <Link href="/dashboard/admin"
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm whitespace-nowrap transition ${pathname.startsWith("/dashboard/admin") ? "bg-amber-500/10 text-amber-400" : "text-amber-500/80 hover:text-amber-300 hover:bg-white/5"}`}>
+                <Shield className="size-4" /> Admin
+              </Link>
+            </>
           )}
         </nav>
         <div className="hidden md:flex items-center gap-2 shrink-0">
