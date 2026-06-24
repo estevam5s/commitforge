@@ -10,12 +10,24 @@ type Plan = {
 
 const brl = (cents: number) => (cents / 100).toLocaleString("pt-BR", { style: "currency", currency: "BRL", minimumFractionDigits: 0 })
 
+// Planos embutidos (renderizam na hora, sem flicker). Sincronizados com o /api/plans.
+const FALLBACK_PLANS: Plan[] = [
+  { slug: "inicial", name: "Inicial", description: "Para testar e uso pessoal", price_month: 0, price_year: 0, highlighted: false,
+    features: ["1 repositório", "30 commits retroativos/mês", "Modo arquivo único", "CLI básica + 1 token", "Provedor GitHub", "Histórico de 7 dias", "Suporte da comunidade"] },
+  { slug: "starter", name: "Starter", description: "Para o desenvolvedor individual", price_month: 1900, price_year: 18200, highlighted: false,
+    features: ["Até 5 repositórios", "500 commits/mês", "Modo arquivo e projeto", "Distribuição realista básica", "3 templates de mensagem", "2 tokens de CLI", "Histórico de 30 dias", "Suporte por e-mail"] },
+  { slug: "pro", name: "Pro", description: "Para profissionais e freelancers", price_month: 4900, price_year: 47000, highlighted: true,
+    features: ["Repositórios ilimitados", "Commits ilimitados", "Multi-repositório em lote", "GitHub, GitLab e Bitbucket", "Distribuição realista avançada", "Templates ilimitados", "Agendamento de jobs", "Webhooks", "5 tokens de CLI", "Histórico ilimitado", "Suporte prioritário"] },
+  { slug: "enterprise", name: "Enterprise", description: "Para times e empresas", price_month: 14900, price_year: 143000, highlighted: false,
+    features: ["Tudo do Pro", "Organizações, equipes e permissões", "API pública + tokens", "SSO e auditoria completa", "Tokens de CLI ilimitados", "Automações agendadas", "Suporte dedicado (SLA)"] },
+]
+
 export function HomePricing() {
-  const [plans, setPlans] = useState<Plan[]>([])
+  const [plans, setPlans] = useState<Plan[]>(FALLBACK_PLANS)
   const [cycle, setCycle] = useState<"month" | "year">("month")
 
   useEffect(() => {
-    fetch("/api/plans").then((r) => r.json()).then((d) => setPlans(d.plans || [])).catch(() => {})
+    fetch("/api/plans").then((r) => r.json()).then((d) => { if (d.plans?.length) setPlans(d.plans) }).catch(() => {})
   }, [])
 
   return (
