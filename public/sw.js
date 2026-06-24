@@ -1,70 +1,26 @@
-// CommitForge Service Worker v1.0.0
-const CACHE_NAME = 'commitforge-v3'
-const STATIC_ASSETS = [
-  '/',
-  '/docs',
-  '/git',
-  '/manifest.json',
-  '/sistema-icon.png',
-  '/sistema.png',
-  '/og-image.png',
-]
+// CommitForge Service Worker v4 — cache buster
+// Versões anteriores cacheavam o bundle antigo (com URL de Supabase inválida).
+// Este SW limpa TODOS os caches e deixa de interceptar requisições, garantindo
+// que todo cliente recebe sempre os assets mais novos da rede.
 
-// ── Install ─────────────────────────────────────────────────────────
-self.addEventListener('install', (event) => {
-  event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => {
-      return cache.addAll(STATIC_ASSETS.map((url) => new Request(url, { cache: 'reload' })))
-        .catch(() => {
-          // Silently fail for assets that don't exist yet
-        })
-    })
-  )
+self.addEventListener('install', () => {
   self.skipWaiting()
 })
 
-// ── Activate ────────────────────────────────────────────────────────
 self.addEventListener('activate', (event) => {
   event.waitUntil(
-    caches.keys().then((cacheNames) =>
-      Promise.all(
-        cacheNames
-          .filter((name) => name !== CACHE_NAME)
-          .map((name) => caches.delete(name))
-      )
-    )
-  )
-  self.clients.claim()
-})
-
-// ── Fetch — Network First, fallback to Cache ────────────────────────
-self.addEventListener('fetch', (event) => {
-  // Skip non-GET and cross-origin
-  if (event.request.method !== 'GET') return
-  if (!event.request.url.startsWith(self.location.origin)) return
-  // Skip Next.js dev server hot-reload
-  if (event.request.url.includes('_next/webpack-hmr')) return
-
-  event.respondWith(
-    fetch(event.request)
-      .then((response) => {
-        // Cache successful responses
-        if (response.ok) {
-          const clone = response.clone()
-          caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone))
-        }
-        return response
-      })
-      .catch(() =>
-        // Offline fallback
-        caches.match(event.request).then((cached) => {
-          if (cached) return cached
-          // Return offline page for navigation
-          if (event.request.mode === 'navigate') {
-            return caches.match('/')
-          }
-          return new Response('Offline', { status: 503 })
-        })
-      )
+    (async () => {
+      // apaga qualquer cache antigo
+      const keys = await caches.keys()
+      await Promise.all(keys.map((k) => caches.delete(k)))
+      await self.clients.claim()
+      // recarrega as abas abertas para pegar o bundle novo
+      const clients = await self.clients.matchAll({ type: 'window' })
+      for (const client of clients) {
+        try { client.navigate(client.url) } catch (_) { /* noop */ }
+      }
+    })()
   )
 })
+
+// Sem handler de 'fetch': o navegador busca tudo direto da rede (sem cache do SW).
