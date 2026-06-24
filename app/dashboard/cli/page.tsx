@@ -57,10 +57,13 @@ export default function CliPage() {
         {/* Passo 1: instalar */}
         <section className="rounded-2xl border border-white/10 bg-white/[0.02] p-6 space-y-3">
           <h2 className="font-semibold text-white">1. Instale a CLI</h2>
-          <p className="text-sm text-zinc-400">Linux / macOS:</p>
+          <p className="text-sm text-zinc-400">Linux / macOS (instalador automático):</p>
           <CodeBlock>{`curl -fsSL https://commitforge.vercel.app/install.sh | bash`}</CodeBlock>
-          <p className="text-sm text-zinc-400">Ou via pip:</p>
-          <CodeBlock>{`pip install commitforge`}</CodeBlock>
+          <p className="text-sm text-zinc-400">Alternativa (clonando o repositório):</p>
+          <CodeBlock>{`git clone https://github.com/estevam5s/commitforge.git
+cd commitforge/cli-commit
+pip install -r requirements.txt
+python forge.py --help`}</CodeBlock>
         </section>
 
         {/* Passo 2: token */}
